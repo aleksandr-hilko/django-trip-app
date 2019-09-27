@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:11.5
+    ports:
+      - "5433:5432"
+  web:
+    build: .
+    command: python /code/trip_app/manage.py runserver 0.0.0.0:8000 --settings=trip_app.settings.production
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
