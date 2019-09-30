@@ -7,8 +7,15 @@ services:
       - "5433:5432"
   web:
     build: .
-    command: python /code/trip_app/manage.py runserver 0.0.0.0:8000 --settings=trip_app.settings.production
+    environment:
+      DJANGO_SETTINGS_MODULE: 'trip_app.settings.production'
+    command: python trip_app/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./web-django:/code
     ports:
       - "8000:8000"
     depends_on:
       - db
+
+volumes:
+  web-django:
