@@ -20,12 +20,14 @@ App that allow customers to collaborate being moved around the city by either cr
 
     `cd {project_name}`
 
-5. Run `docker-compose -f docker-compose.yaml -f docker-compose.setup.yaml up`
+5. To run the tests you should type:
 
-    This will update your project pip dependencies and will run Django model migrations.
+* `make test` - this will build a test Docker image and run the tests automatically.
 
-    Note: **use this command every time you have dependencies updated / model migrations changed**
+6. Run `docker-compose -f docker-compose.yaml -f docker-compose.setup.yaml up` if you have
+   you have dependencies updated / model migrations changed, otherwise run `docker-compose up'
 
     You can check that your server is now working in a browser:
         `http://127.0.0.1:8000/api/accounts/`
     Press `Ctrl+C` when completed to stop the services.
+
