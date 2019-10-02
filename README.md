@@ -10,8 +10,6 @@ App that allow customers to collaborate being moved around the city by either cr
 
 ## Setup Steps
 
-### Main:
-
 1. Install Docker: `https://docs.docker.com/install/linux/docker-ce/ubuntu/` (check the menu on the left for other OS-s)
 2. Install Docker Compose: `https://docs.docker.com/compose/install/`
 3. Clone the current repo somewhere.
