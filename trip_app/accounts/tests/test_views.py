@@ -1,33 +1,7 @@
 import pytest
-from core.utils import raise_for_status
 from django.urls import reverse
 
-from .user_factory import UserFactory, faker
-
-
-@pytest.fixture
-def signup_data():
-    data = {
-        'username': faker.user_name(),
-        'password': faker.password(),
-        'first_name': faker.first_name(),
-        'last_name': faker.last_name(),
-        'email': faker.email(),
-        'is_staff': False,
-        'is_active': False
-    }
-    return data
-
-
-@pytest.fixture
-def create_user_dict(signup_data, client):
-    """" Create a new user via POST /api/accounts/.
-         Exception will be raised in case of bas response """
-    url = reverse("accounts:create")
-    resp = client.post(url, signup_data)
-    raise_for_status(resp)
-    print(f"user created {resp.json()}")
-    return signup_data
+from .user_factory import UserFactory
 
 
 @pytest.mark.django_db
@@ -38,21 +12,18 @@ class TestUsers:
         resp = client.post(url, signup_data)
         assert resp.status_code == 201
         user_dict = resp.json()
-        print(user_dict)
         assert user_dict.get('username') == signup_data['username']
         assert user_dict.get('first_name') == signup_data['first_name']
         assert user_dict.get('last_name') == signup_data['last_name']
         assert user_dict.get('email') == signup_data['email']
 
-    @pytest.mark.parametrize('user_qty', [0, 1, 10, 100])
-    def test_user_list(self, admin_client, user_qty):
+    def test_user_list(self, admin_client, user_create_quantity):
         """ Verify that users are displayed with GET api/accounts/ """
-        UserFactory.create_batch(size=user_qty, is_staff=False, )
         url = reverse("accounts:users")
         resp = admin_client.get(url)
         assert resp.status_code == 200
         # We are increasing expected number by 1 because admin user client is created as well
-        assert len(resp.json()) == user_qty + 1
+        assert len(resp.json()) == user_create_quantity + 1
 
     def test_user_detail(self, admin_client):
         """ Verify that user is returned with GET api/accounts/<user_id>/ """
@@ -73,9 +44,11 @@ class TestUsers:
         resp = client.get(url)
         assert resp.status_code == 403
 
-    def test_user_token_obtain(self, client, create_user_dict):
+    def test_user_token_obtain(self, client, create_user):
         """ Verify that existing user is able to obtain a token """
+        _, username, password = create_user
         url = reverse("token_obtain_pair")
-        resp = client.post(url, {'username': create_user_dict['username'], 'password': create_user_dict['password']})
-        print(resp.status_code)
+        resp = client.post(url, {'username': username, 'password': password})
         assert resp.status_code == 200
+        assert resp.json()['refresh'], "No refresh token provided"
+        assert resp.json()['access'], "No access token provided"

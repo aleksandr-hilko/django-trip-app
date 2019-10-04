@@ -15,7 +15,7 @@ class TestUsers:
         user_factory.UserFactory(is_staff=user__is_staff)
         assert User.objects.count() == 1
         user = User.objects.first()
-        assert user.is_staff == user__is_staff
+        assert user.is_staff is user__is_staff
 
     @pytest.mark.parametrize('is_active', [True, False])
     def test_create_user_active_create(self, is_active):
@@ -23,7 +23,7 @@ class TestUsers:
         user_factory.UserFactory(is_active=is_active)
         assert User.objects.count() == 1
         user = User.objects.first()
-        assert user.is_active == is_active
+        assert user.is_active is is_active
 
     def test_unable_to_create_user_with_existing_name(self):
         """ Verify that exception will be raised when the user with the existing user name is created """
@@ -34,7 +34,7 @@ class TestUsers:
             assert 'UNIQUE constraint failed:' in exc
 
     def test_create_user_with_blank_fields(self):
-        """ Verify that exception will be raised when the user with the existing user name is created """
+        """ Verify the ability to create a user with blank first name, last name and email """
         user_factory.UserFactory(first_name="", last_name="", email="")
         assert User.objects.count() == 1
         user = User.objects.first()
