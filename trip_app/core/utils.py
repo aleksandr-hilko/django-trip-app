@@ -1,3 +1,8 @@
+import re
+
+from django.contrib.gis.geos import fromstr
+
+
 def raise_for_status(resp):
     """ Raises an exception if it occurs given response object """
 
@@ -11,3 +16,10 @@ def raise_for_status(resp):
 
     if http_error_msg:
         raise Exception(http_error_msg)
+
+
+def str_to_geopoint(data):
+    """ Convert string coordinates in Point object. E.g. '23.4 23.5'-> Point(23.4, 23.5) """
+    lon, lat = re.findall("(\d+(?:\.\d+)?)", data)
+    print(data, lon, lat)
+    return fromstr(f'POINT({lon} {lat})', srid=4326)
