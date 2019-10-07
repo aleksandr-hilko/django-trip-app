@@ -4,18 +4,20 @@ services:
   db:
     image: postgres:11.5
     ports:
-      - "5433:5432"
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: $DB_USER
+      POSTGRES_PASSWORD: $DB_PASS
+      POSTGRES_DB: $DB_NAME
   web:
     build: .
     environment:
       DJANGO_SETTINGS_MODULE: 'trip_app.settings.production'
+      DB_USER: $DB_USER
+      DB_PASS: $DB_PASS
+      DB_NAME: $DB_NAME
     command: python trip_app/manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./web-django:/code
     ports:
       - "8000:8000"
     depends_on:
       - db
-
-volumes:
-  web-django:
