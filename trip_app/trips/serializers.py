@@ -13,7 +13,7 @@ class GeoField(serializers.CharField):
 
     def to_representation(self, value):
         """ Convert Point object to string. E.g. Point(23.4, 23.5) -> '[23.4 23.5]' """
-        return value.coords
+        return f"{value.x} {value.y}"
 
     def to_internal_value(self, data):
         """ Convert string coordinates in Point object. E.g. '23.4 23.5'-> Point(23.4, 23.5) """

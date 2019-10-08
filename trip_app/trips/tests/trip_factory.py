@@ -1,13 +1,12 @@
 from datetime import timedelta
 
 import factory
-from django.contrib.gis.geos import fromstr
+from accounts.tests.user_factory import UserFactory
+from django.contrib.gis.geos import Point
 from django.utils import timezone
 from faker import Factory as FakerFactory
 
-from accounts.tests.user_factory import UserFactory
 from ..models import Trip
-from django.contrib.gis.geos import Point
 
 faker = FakerFactory.create()
 
@@ -16,8 +15,8 @@ class TripFactory(factory.django.DjangoModelFactory):
     """Trip factory."""
     driver = factory.SubFactory(UserFactory)
     dep_time = timezone.now() + timedelta(days=1)
-    start_point = Point(float(faker.coordinate()), float(faker.coordinate()), srid=4326)
-    dest_point = Point(float(faker.coordinate()), float(faker.coordinate()), srid=4326)
+    start_point = Point(float(faker.latitude()), float(faker.longitude()), srid=4326)
+    dest_point = Point(float(faker.latitude()), float(faker.longitude()), srid=4326)
     price = faker.random_number()
     num_seats = faker.random_digit_not_null()
     description = "test description"
