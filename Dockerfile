@@ -2,6 +2,11 @@ FROM python:3.7
 ENV PYTHONUNBUFFERED 1
 WORKDIR /code
 COPY requirements /code/
+RUN apt-get update && apt-get install -y \
+    gdal-bin libgdal-dev \
+    python3-gdal \
+    binutils libproj-dev \
+ && rm -rf /var/lib/apt/lists/*
 RUN pip install -r production.txt
 
 ARG TEST
