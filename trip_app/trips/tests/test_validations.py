@@ -13,7 +13,7 @@ MIN_LATITUDE = -180.0
 CORRECT_LATITUDE = 10
 CORRECT_LONGITUDE = 10
 
-list_create_trips_url = reverse("trips:list_create")
+list_create_trips_url = reverse("trips-list")
 
 
 @pytest.mark.django_db

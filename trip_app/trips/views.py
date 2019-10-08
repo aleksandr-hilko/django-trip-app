@@ -1,22 +1,29 @@
 from core.utils import str_to_geopoint
 from django.contrib.gis.db.models.functions import Distance
 from django.db.models import F
-from rest_framework.generics import ListCreateAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 
 from .models import Trip
+from .permissions import IsTripDriverOrAdmin
 from .serializers import TripSerializer
 
 
-class TripListCreateApiView(ListCreateAPIView):
+class TripViewSet(ModelViewSet):
     serializer_class = TripSerializer
-    permission_classes = [IsAuthenticated, ]
     pagination_class = PageNumberPagination
     pagination_class.page_size = 5
 
     def perform_create(self, serializer):
         serializer.save(driver=self.request.user)
+
+    def get_permissions(self):
+        if self.action in ['update', 'destroy']:
+            permission_classes = [IsTripDriverOrAdmin]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         queryset = Trip.objects.all()

@@ -6,9 +6,9 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .trip_factory import TripFactory
-from ..views import TripListCreateApiView
+from ..views import TripViewSet
 
-list_create_trips_url = reverse("trips:list_create")
+list_create_trips_url = reverse("trips-list")
 
 
 @pytest.fixture
@@ -43,17 +43,16 @@ def trips_with_different_coordinates():
 
 @pytest.mark.django_db
 def test_create_trip(admin_client, trip_data):
-    data = trip_data
-    resp = admin_client.post(list_create_trips_url, data)
+    resp = admin_client.post(list_create_trips_url, trip_data)
     assert resp.status_code == 201
     trip_dict = resp.json()
     assert trip_dict["driver"] == "admin"
-    assert trip_dict["dep_time"] == data["dep_time"]
-    assert trip_dict["start_point"] == data["start_point"]
-    assert trip_dict["dest_point"] == data["dest_point"]
-    assert trip_dict["price"] == data["price"]
-    assert trip_dict["num_seats"] == data["num_seats"]
-    assert trip_dict["description"] == data["description"]
+    assert trip_dict["dep_time"] == trip_data["dep_time"]
+    assert trip_dict["start_point"] == trip_data["start_point"]
+    assert trip_dict["dest_point"] == trip_data["dest_point"]
+    assert trip_dict["price"] == trip_data["price"]
+    assert trip_dict["num_seats"] == trip_data["num_seats"]
+    assert trip_dict["description"] == trip_data["description"]
 
 
 @pytest.mark.django_db
@@ -65,7 +64,7 @@ def test_get_trips_filtering_time(admin_client, trips):
     assert resp.status_code == 200
     trip_dict = resp.json()
     assert trip_dict["count"] == trips_count
-    max_page_size = TripListCreateApiView.pagination_class.page_size
+    max_page_size = TripViewSet.pagination_class.page_size
 
     if trips_count > max_page_size:
         assert len(trip_dict["results"]) == max_page_size
@@ -105,3 +104,46 @@ def test_filter_trips_by_time(admin_client, trips_with_different_dep_times):
     resp_dict = resp.json()
     assert resp_dict["count"] == 1
     assert resp_dict["results"][0]["id"] == in_time_trip.id
+
+
+@pytest.mark.django_db
+def test_get_trip(admin_client):
+    """ Verify that correct trip data can be accessed via GET /api/trips/<trip_id>/ """
+    trip = TripFactory()
+    url = reverse("trips-detail", args=[trip.id])
+    resp = admin_client.get(url)
+    assert resp.status_code == 200
+    resp_dict = resp.json()
+    assert resp_dict["driver"] == trip.driver.username
+    assert resp_dict["start_point"] == f"{trip.start_point.x} {trip.start_point.y}"
+    assert resp_dict["dest_point"] == f"{trip.dest_point.x} {trip.dest_point.y}"
+    assert resp_dict["price"] == trip.price
+    assert resp_dict["num_seats"] == trip.num_seats
+    assert resp_dict["description"] == trip.description
+
+
+@pytest.mark.django_db
+def test_update_trip(admin_client, trip_data):
+    """ Verify that trip can be updated via PUT /api/trips/<trip_id>/ """
+    trip = TripFactory()
+    url = reverse("trips-detail", args=[trip.id])
+    resp = admin_client.put(url, trip_data, content_type='application/json')
+    resp_dict = resp.json()
+    assert resp.status_code == 200
+    assert resp_dict["start_point"] == trip_data["start_point"]
+    assert resp_dict["dest_point"] == trip_data["dest_point"]
+    assert resp_dict["price"] == trip_data["price"]
+    assert resp_dict["num_seats"] == trip_data["num_seats"]
+    assert resp_dict["description"] == trip_data["description"]
+
+
+@pytest.mark.django_db
+def test_delete_trip(admin_client):
+    """ Verify that trip can be delete via DELETE /api/trips/<trip_id>/ """
+    trip = TripFactory()
+    url = reverse("trips-detail", args=[trip.id])
+    resp = admin_client.delete(url)
+    assert resp.status_code == 204
+    resp = admin_client.get(url)
+    assert resp.status_code == 404
+

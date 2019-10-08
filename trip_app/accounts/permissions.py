@@ -8,5 +8,7 @@ class IsAuthOwnerOrAdminOnly(permissions.IsAuthenticated):
 
     def has_object_permission(self, request, view, obj):
         # Write permissions are only allowed to the owner or admin
-        is_auth = super().has_object_permission(request, view, obj)
-        return (is_auth and obj == request.user) or (is_auth and request.user.is_superuser)
+        is_auth = super().has_permission(request, view)
+        if not is_auth:
+            return False
+        return obj == request.user or request.user.is_superuser
