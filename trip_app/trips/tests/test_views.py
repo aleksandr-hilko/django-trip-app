@@ -46,21 +46,19 @@ def trips_with_different_coordinates():
 
 
 @pytest.mark.django_db
-def test_create_trip(admin_client, trip_data):
-    resp = admin_client.post(list_create_trips_url, trip_data)
-    assert resp.status_code == 201
-    trip_dict = resp.json()
-    assert trip_dict["driver"] == "admin"
-    assert trip_dict["dep_time"] == trip_data["dep_time"]
-    assert trip_dict["start_point"] == trip_data["start_point"]
-    assert trip_dict["dest_point"] == trip_data["dest_point"]
-    assert trip_dict["price"] == trip_data["price"]
-    assert trip_dict["num_seats"] == trip_data["num_seats"]
-    assert trip_dict["description"] == trip_data["description"]
-
-
-@pytest.mark.django_db
 class TestTrips:
+    def test_create_trip(self,admin_client, trip_data):
+        resp = admin_client.post(list_create_trips_url, trip_data)
+        assert resp.status_code == 201
+        trip_dict = resp.json()
+        assert trip_dict["driver"] == "admin"
+        assert trip_dict["dep_time"] == trip_data["dep_time"]
+        assert trip_dict["start_point"] == trip_data["start_point"]
+        assert trip_dict["dest_point"] == trip_data["dest_point"]
+        assert trip_dict["price"] == trip_data["price"]
+        assert trip_dict["num_seats"] == trip_data["num_seats"]
+        assert trip_dict["description"] == trip_data["description"]
+
     def test_trips_pagination(self, admin_client, trips):
         """ Verify that correct number of trips is created and returned queryset
             is limited to the page_size parameter or TripListCreateApiView """

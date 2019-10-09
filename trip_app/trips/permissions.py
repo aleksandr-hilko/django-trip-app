@@ -1,11 +1,10 @@
-from rest_framework import permissions
+from rest_framework.permissions import IsAuthenticated
 
 
-class IsTripDriverOrAdmin(permissions.IsAdminUser):
+class IsTripDriverOrAdmin(IsAuthenticated):
     """
     Object-level permission to only allow owners of an object to edit it.
     """
 
     def has_object_permission(self, request, view, obj):
-        is_admin = super().has_permission(request, view)
-        return obj.driver == request.user or is_admin
+        return obj.driver == request.user or request.user.is_staff

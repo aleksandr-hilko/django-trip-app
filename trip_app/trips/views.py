@@ -22,7 +22,7 @@ class TripViewSet(ModelViewSet):
         serializer.save(driver=self.request.user)
 
     def get_permissions(self):
-        if self.action in ['update', 'destroy']:
+        if self.action in ['update', 'destroy', 'partial_update']:
             permission_classes = [IsTripDriverOrAdmin]
         else:
             permission_classes = [IsAuthenticated]
@@ -74,7 +74,7 @@ class TripViewSet(ModelViewSet):
             return Response(serializer.data)
         return Response(data="There are no empty seats in this trip", status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[IsTripDriverOrAdmin])
     def requests(self, *args, **kwargs):
         """ The list of the requests related to the specific trip. GET /api/trips/<trip_id>/requests/ """
         trip = self.get_object()
