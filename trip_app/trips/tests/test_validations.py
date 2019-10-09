@@ -1,6 +1,8 @@
 import datetime
 
 import pytest
+from core.utils import str_to_geopoint
+from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
 
@@ -40,3 +42,13 @@ def test_invalid_dep_time(admin_client, trip_data):
     resp = admin_client.post(list_create_trips_url, trip_data)
     assert resp.status_code == 400
     assert "Departure time has expired" in resp.json()["dep_time"][0]
+
+
+@pytest.mark.parametrize("str_coord", ["23.5 23.5", "[23.5 23.5]", "[23.5, 23.5]", "(23.5, 23.5)", "23.5, 23.5"])
+def test_convert_to_geopoint(str_coord):
+    """ Verify 'str_to_geopoint' function that is responsible for serializing incoming
+        string coordinates to django.contrib.gis.geos.Point objects"""
+    point = str_to_geopoint(str_coord)
+    assert point == Point(23.5, 23.5, srid=4326)
+    assert point.x == 23.5
+    assert point.y == 23.5

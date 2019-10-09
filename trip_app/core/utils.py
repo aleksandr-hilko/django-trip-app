@@ -20,7 +20,10 @@ def raise_for_status(resp):
 
 
 def str_to_geopoint(data):
-    """ Convert string coordinates in Point object. E.g. '23.4 23.5'-> Point(23.4, 23.5) """
+    """ Convert string coordinates into a  Point object.
+        Regex is used to handle different incoming formats.
+        E.g. '23.4 23.5', '[23.4 23.5]', '(23.4 23.5)' would be converted into
+        the same object Point(23.4, 23.5) """
     lon, lat = re.findall(r"[-+]?\d*\.?\d+|\d+", data)
     if not -90 <= float(lon) <= 90:
         raise ValidationError(" Longitude coordinates should be in range -90...90 ")
