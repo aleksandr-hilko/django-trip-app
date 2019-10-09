@@ -3,7 +3,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
-from .models import Trip
+from .models import Trip, TripRequest
 
 
 class GeoField(serializers.CharField):
@@ -24,6 +24,7 @@ class TripSerializer(ModelSerializer):
     dest_point = GeoField(required=True, max_length=100)
     start_point = GeoField(required=True, max_length=100)
     driver = serializers.StringRelatedField(read_only=True)
+    passengers = serializers.StringRelatedField(read_only=True, many=True)
     dist1 = serializers.CharField(required=False, read_only=True)
     dist2 = serializers.CharField(required=False, read_only=True)
 
@@ -44,11 +45,6 @@ class TripSerializer(ModelSerializer):
             'dist1',
             'dist2',
         ]
-        extra_kwargs = {
-            'passengers': {'read_only': True},
-            'man_approve': {'write_only': True},
-            'is_active': {'write_only': True},
-        }
 
     def validate_dep_time(self, value):
         """
@@ -57,3 +53,15 @@ class TripSerializer(ModelSerializer):
         if value < timezone.now():
             raise serializers.ValidationError("Departure time has expired. Please correct the time")
         return value
+
+
+class TripRequestSerializer(ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = TripRequest
+        fields = [
+            "id",
+            "trip",
+            "user",
+        ]

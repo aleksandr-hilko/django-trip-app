@@ -1,13 +1,16 @@
 from core.utils import str_to_geopoint
 from django.contrib.gis.db.models.functions import Distance
 from django.db.models import F
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from .models import Trip
+from .models import Trip, TripRequest
 from .permissions import IsTripDriverOrAdmin
-from .serializers import TripSerializer
+from .serializers import TripSerializer, TripRequestSerializer
 
 
 class TripViewSet(ModelViewSet):
@@ -50,3 +53,30 @@ class TripViewSet(ModelViewSet):
                 order_by(F('dist1') + F('dist2'))
 
         return queryset
+
+    @action(detail=True, methods=['post'])
+    def reserve(self, request, pk=None):
+        """ Reserve a trip by sending a POST to api/trip/<trip_id>/reserve/.
+            If the man_approve field of the user model is True the trip request will be created,
+            which means that user requested a trip should be approved by the driver.
+            If man_approve is False user will be added to the passengers list if there are free seats """
+        trip = self.get_object()
+        user = request.user
+        if user == trip.driver:
+            return Response(data="Driver can't be a passenger at the same time", status=status.HTTP_400_BAD_REQUEST)
+        if trip.free_seats:
+            if trip.man_approve:
+                trip_request = TripRequest.objects.create(trip=trip, user=user)
+                serializer = TripRequestSerializer(trip_request)
+                return Response(serializer.data)
+            trip.passengers.add(user)
+            serializer = self.get_serializer(trip)
+            return Response(serializer.data)
+        return Response(data="There are no empty seats in this trip", status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def requests(self, *args, **kwargs):
+        """ The list of the requests related to the specific trip. GET /api/trips/<trip_id>/requests/ """
+        trip = self.get_object()
+        serializer = TripRequestSerializer(trip.requests, many=True)
+        return Response(serializer.data)

@@ -16,8 +16,12 @@ class Trip(models.Model):
     is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def free_seats(self):
+        return self.num_seats - self.passengers.count()
+
 
 class TripRequest(models.Model):
-    trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="requests")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="requests")
     created = models.DateTimeField(auto_now_add=True)
