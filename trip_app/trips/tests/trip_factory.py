@@ -29,7 +29,7 @@ class TripFactory(factory.django.DjangoModelFactory):
             return
 
         if extracted:
-            # But when TripFactory.create(groups=(group1, group2, group3) is called then
+            # But when TripFactory.create(passengers=(passenger, passenger, passenger) is called then
             # passengers declaration will add passed in passengers list
             for passenger in extracted:
                 self.passengers.add(passenger)
