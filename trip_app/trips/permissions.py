@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 
 class IsTripDriverOrAdmin(IsAuthenticated):
     """
-    Object-level permission to only allow owners of an object to edit it.
+    Permissions to allow only driver of a trip or admin to edit/delete a trip
     """
 
     def has_object_permission(self, request, view, obj):

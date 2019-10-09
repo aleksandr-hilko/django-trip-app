@@ -1,7 +1,9 @@
-import pytest
+from datetime import timedelta
 
-from ..serializers import TripSerializer
-from .trip_factory import TripFactory
+import pytest
+from django.utils import timezone
+
+from .trip_factory import TripFactory, faker
 
 
 @pytest.fixture(
@@ -17,10 +19,12 @@ def trips(request):
 def trip_data():
     """ Create a trip model without touching database and return its dict
         repr for using as a request payload """
-    trip = TripFactory.build()
-    serializer = TripSerializer(trip)
-    data = serializer.data
-    del data["id"]
-    del data["driver"]
-    del data["passengers"]
+    data = {
+        "dep_time": (timezone.now() + timedelta(days=1)),
+        "start_point": f"{faker.latitude()} {float(faker.longitude())}",
+        "dest_point": f"{faker.latitude()} {float(faker.longitude())}",
+        "price": faker.random_number(),
+        "num_seats": faker.random_digit_not_null(),
+        "description": "test description",
+    }
     return data

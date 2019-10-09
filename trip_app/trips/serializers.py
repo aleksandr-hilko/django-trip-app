@@ -27,6 +27,7 @@ class TripSerializer(ModelSerializer):
     passengers = serializers.StringRelatedField(read_only=True, many=True)
     dist1 = serializers.CharField(required=False, read_only=True)
     dist2 = serializers.CharField(required=False, read_only=True)
+    free_seats = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Trip
@@ -39,12 +40,17 @@ class TripSerializer(ModelSerializer):
             "dest_point",
             "price",
             "num_seats",
+            "free_seats",
             "man_approve",
             "description",
             "is_active",
             'dist1',
             'dist2',
         ]
+        extra_kwargs = {'num_seats': {'write_only': True}}
+
+    def get_free_seats(self, obj):
+        return obj.free_seats
 
     def validate_dep_time(self, value):
         """

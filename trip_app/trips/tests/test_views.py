@@ -5,8 +5,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
-
 from trips.models import TripRequest
+
 from .trip_factory import TripFactory
 from ..views import TripViewSet
 
@@ -47,16 +47,16 @@ def trips_with_different_coordinates():
 
 @pytest.mark.django_db
 class TestTrips:
-    def test_create_trip(self,admin_client, trip_data):
+    def test_create_trip(self, admin_client, trip_data):
         resp = admin_client.post(list_create_trips_url, trip_data)
         assert resp.status_code == 201
         trip_dict = resp.json()
         assert trip_dict["driver"] == "admin"
-        assert trip_dict["dep_time"] == trip_data["dep_time"]
+        assert trip_dict["dep_time"] == trip_data["dep_time"].strftime('%m/%d/%Y %H:%M:%S')
         assert trip_dict["start_point"] == trip_data["start_point"]
         assert trip_dict["dest_point"] == trip_data["dest_point"]
         assert trip_dict["price"] == trip_data["price"]
-        assert trip_dict["num_seats"] == trip_data["num_seats"]
+        assert trip_dict["free_seats"] == trip_data["num_seats"]
         assert trip_dict["description"] == trip_data["description"]
 
     def test_trips_pagination(self, admin_client, trips):
@@ -117,7 +117,7 @@ class TestTrips:
         assert resp_dict["start_point"] == f"{trip.start_point.x} {trip.start_point.y}"
         assert resp_dict["dest_point"] == f"{trip.dest_point.x} {trip.dest_point.y}"
         assert resp_dict["price"] == trip.price
-        assert resp_dict["num_seats"] == trip.num_seats
+        assert resp_dict["free_seats"] == trip.num_seats
         assert resp_dict["description"] == trip.description
 
     def test_update_trip(self, admin_client, trip_data):
@@ -130,7 +130,7 @@ class TestTrips:
         assert resp_dict["start_point"] == trip_data["start_point"]
         assert resp_dict["dest_point"] == trip_data["dest_point"]
         assert resp_dict["price"] == trip_data["price"]
-        assert resp_dict["num_seats"] == trip_data["num_seats"]
+        assert resp_dict["free_seats"] == trip_data["num_seats"]
         assert resp_dict["description"] == trip_data["description"]
 
     def test_delete_trip(self, admin_client):
@@ -202,4 +202,3 @@ class TestTrips:
         assert resp_dict[0]['id'] == trip_request.id
         assert resp_dict[0]['trip'] == trip.id
         assert resp_dict[0]['user'] == 'admin'
-
