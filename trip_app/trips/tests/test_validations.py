@@ -23,8 +23,8 @@ list_create_trips_url = reverse("trips:list_create")
                              [MAX_LONGITUDE + 0.1, CORRECT_LATITUDE, "Longitude"]
                          ]
                          )
-def test_unable_to_create_trip_with_incorrect_coords(admin_client, incorrect_coords, trip_data):
-    """  Verify coordinate validations """
+def test_incorrect_coords(admin_client, incorrect_coords, trip_data):
+    """ Verify that Trip can't be created having incorrect coordinate """
     longitude, latitude, incorrect_arg = incorrect_coords
     start_point = f"{longitude}, {latitude}"
     trip_data["start_point"] = start_point
@@ -33,7 +33,8 @@ def test_unable_to_create_trip_with_incorrect_coords(admin_client, incorrect_coo
     assert f"{incorrect_arg} coordinates should be in range " in resp.json()["start_point"][0]
 
 
-def test_unable_to_create_trip_with_dep_time_in_the_past(admin_client, trip_data):
+def test_invalid_dep_time(admin_client, trip_data):
+    """ Verify that Trip can't be created with expired departure time"""
     time_in_the_past = timezone.now() - datetime.timedelta(minutes=30)
     trip_data["dep_time"] = time_in_the_past.strftime("%Y-%m-%dT%H:%M:%S")
     resp = admin_client.post(list_create_trips_url, trip_data)
