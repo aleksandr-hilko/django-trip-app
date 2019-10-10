@@ -42,14 +42,20 @@ class Trip(models.Model):
         """ Number of free seats that remained for the trip. """
         return self.num_seats - self.passengers.count()
 
+    def get_passengers(self):
+        return ",".join([str(p) for p in self.passengers.all()])
+
 
 class TripRequest(models.Model):
-    trip = models.ForeignKey(
-        Trip, on_delete=models.CASCADE, related_name="requests"
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="requests",
-    )
+    ACTIVE = 1
+    APPROVED = 2
+    DECLINED = 3
+    STATUS_CHOICES = [
+        (ACTIVE, 'Active'),
+        (APPROVED, 'Approved'),
+        (DECLINED, 'Declined'),
+    ]
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="requests")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="requests")
+    status = models.IntegerField(choices=STATUS_CHOICES, default=ACTIVE)
     created = models.DateTimeField(auto_now_add=True)

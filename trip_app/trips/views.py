@@ -1,7 +1,10 @@
 from django.contrib.gis.db.models.functions import Distance
 from django.db.models import F
 from rest_framework import status
-from rest_framework.decorators import action
+
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -22,7 +25,7 @@ class TripViewSet(ModelViewSet):
         serializer.save(driver=self.request.user)
 
     def get_permissions(self):
-        if self.action in ["update", "destroy", "partial_update"]:
+        if self.action in ['update', 'destroy', 'partial_update', 'requests']:
             self.permission_classes = [IsTripDriverOrAdmin]
         else:
             self.permission_classes = [IsAuthenticated]
@@ -92,12 +95,54 @@ class TripViewSet(ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @action(
-        detail=True, methods=["get"], permission_classes=[IsTripDriverOrAdmin]
-    )
-    def requests(self, *args, **kwargs):
-        """ The list of the requests related to the specific trip.
-            GET /api/trips/<trip_id>/requests/. """
-        trip = self.get_object()
-        serializer = TripRequestSerializer(trip.requests, many=True)
-        return Response(serializer.data)
+
+@action(
+    detail=True, methods=["get"], permission_classes=[IsTripDriverOrAdmin]
+)
+def requests(self, *args, **kwargs):
+    """ The list of the requests related to the specific trip.
+        GET /api/trips/<trip_id>/requests/. """
+    trip = self.get_object()
+    serializer = TripRequestSerializer(trip.requests, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['post'])
+@permission_classes([IsAuthenticated])
+def approve_trip_request(request, **kwargs):
+    """ Approve trip request via
+       POST api/trips/<int:trip_pk>/requests/<int:request_pk>/approve/. """
+    trip_pk, request_pk = kwargs.get("trip_pk"), kwargs.get("request_pk")
+    trip = get_object_or_404(Trip, pk=trip_pk)
+    _check_trip_request_permissions(request, trip)
+    if trip.free_seats:
+        trip_request = get_object_or_404(trip.requests, pk=request_pk)
+        trip_request.status = TripRequest.APPROVED
+        trip_request.save()
+        trip.passengers.add(trip_request.user)
+        serializer = TripRequestSerializer(trip_request)
+        return Response(data=serializer.data)
+    return Response(
+        "You can't approve this request because you haven't got free seats",
+        status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['post'])
+@permission_classes([IsAuthenticated])
+def decline_trip_request(request, **kwargs):
+    """ Decline trip request via
+        POST api/trips/<int:trip_pk>/requests/<int:request_pk>/decline/. """
+    trip_pk, request_pk = kwargs.get("trip_pk"), kwargs.get("request_pk")
+    trip = get_object_or_404(Trip, pk=trip_pk)
+    _check_trip_request_permissions(request, trip)
+    trip_request = get_object_or_404(trip.requests, pk=request_pk)
+    trip_request.status = TripRequest.DECLINED
+    trip_request.save()
+    serializer = TripRequestSerializer(trip_request)
+    return Response(data=serializer.data)
+
+
+def _check_trip_request_permissions(request, trip):
+    if trip.driver != request.user or not request.user.is_staff:
+        raise PermissionDenied(
+            detail="Only a trip driver or an admin can edit the trip request")

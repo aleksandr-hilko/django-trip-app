@@ -145,7 +145,14 @@ class TripSerializer(ModelSerializer):
 
 class TripRequestSerializer(ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    status = serializers.CharField(source='get_status_display')
 
     class Meta:
         model = TripRequest
-        fields = ["id", "trip", "user"]
+
+        fields = [
+            "id",
+            "trip",
+            "user",
+            "status",
+        ]
