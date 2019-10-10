@@ -57,7 +57,7 @@ class TripViewSet(ModelViewSet):
     @action(detail=True, methods=['post'])
     def reserve(self, request, pk=None):
         """ Reserve a trip by sending a POST to api/trip/<trip_id>/reserve/.
-            If the man_approve field of the user model is True the trip request will be created,
+            If the man_approve field of the trip model is True the trip request will be created,
             which means that user requested a trip should be approved by the driver.
             If man_approve is False user will be added to the passengers list if there are free seats """
         trip = self.get_object()
