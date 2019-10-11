@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from trips.tests.trip_factory import TripFactory
+from trips.tests.trip_factory import TripFactory, TripRequestFactory
 
 User = get_user_model()
 
@@ -65,3 +65,40 @@ def test_admin_delete(admin_client):
     url = reverse("trips-detail", args=[trip.id])
     resp = admin_client.delete(url)
     assert resp.status_code == 204
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "url", ["trip-requests-approve", "trip-requests-decline"]
+)
+def test_user_unable_approve_decline(client, create_user, url):
+    """ Verify that authenticated non driver, non admin can't approve(decline)
+        trip request with POST api/trip-requests/<id>/approve(decline). """
+    _, username, password = create_user
+    client.login(username=username, password=password)
+    trip_request = TripRequestFactory()
+    request_url = reverse(url, args=[trip_request.id])
+    resp = client.post(request_url)
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "url, status",
+    [
+        ("trip-requests-approve", "Approved"),
+        ("trip-requests-decline", "Declined"),
+    ],
+)
+def test_owner_approve_decline(client, create_user, url, status):
+    """ Verify that driver can approve(decline) trip request with
+        POST api/trip-requests/<id>/approve(decline). """
+    _, username, password = create_user
+    user = User.objects.get(username=username)
+    client.login(username=username, password=password)
+    trip = TripFactory(driver=user)
+    trip_request = TripRequestFactory(trip=trip)
+    request_url = reverse(url, args=[trip_request.id])
+    resp = client.post(request_url)
+    assert resp.status_code == 200
+    assert resp.json()["status"] == status

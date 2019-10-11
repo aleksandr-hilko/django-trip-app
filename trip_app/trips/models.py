@@ -11,7 +11,7 @@ class Location(models.Model):
 class Trip(models.Model):
     driver = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        related_name="suggested_trips",
+        related_name="trip_offers",
         on_delete=models.CASCADE,
     )
     passengers = models.ManyToManyField(
@@ -34,7 +34,6 @@ class Trip(models.Model):
     num_seats = models.PositiveIntegerField()
     man_approve = models.BooleanField(default=True)
     description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
 
     @property
@@ -43,6 +42,7 @@ class Trip(models.Model):
         return self.num_seats - self.passengers.count()
 
     def get_passengers(self):
+        """ String representation of trip passengers. """
         return ",".join([str(p) for p in self.passengers.all()])
 
 
@@ -50,12 +50,46 @@ class TripRequest(models.Model):
     ACTIVE = 1
     APPROVED = 2
     DECLINED = 3
+    INACTIVE = 4
     STATUS_CHOICES = [
-        (ACTIVE, 'Active'),
-        (APPROVED, 'Approved'),
-        (DECLINED, 'Declined'),
+        (ACTIVE, "Active"),
+        (APPROVED, "Approved"),
+        (DECLINED, "Declined"),
+        (INACTIVE, "Inactive"),
     ]
-    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="requests")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="requests")
+    trip = models.ForeignKey(
+        Trip, on_delete=models.CASCADE, related_name="requests"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="requests",
+    )
     status = models.IntegerField(choices=STATUS_CHOICES, default=ACTIVE)
     created = models.DateTimeField(auto_now_add=True)
+
+    def approve(self):
+        """ Set "Approved" status in DB
+            and add user to trip's passenger list. """
+        self.status = TripRequest.APPROVED
+        self.save()
+        self.trip.passengers.add(self.user)
+        self.trip.save()
+
+    def decline(self):
+        """ Set "Declined" status for a model in DB
+            and remove user from a trip's passenger list. """
+        self.status = TripRequest.DECLINED
+        self.save()
+        if self.user in self.trip.passengers.all():
+            self.trip.passengers.remove(self.user)
+            self.trip.save()
+
+    def cancel(self):
+        """ Set "Inactive" status for a model in DB
+            and remove user from trip's passenger list. """
+        self.status = TripRequest.INACTIVE
+        self.save()
+        if self.user in self.trip.passengers.all():
+            self.trip.passengers.remove(self.user)
+            self.trip.save()

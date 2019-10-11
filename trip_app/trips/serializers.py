@@ -84,7 +84,6 @@ class TripSerializer(ModelSerializer):
             "free_seats",
             "man_approve",
             "description",
-            "is_active",
             "dist1",
             "dist2",
         ]
@@ -145,14 +144,9 @@ class TripSerializer(ModelSerializer):
 
 class TripRequestSerializer(ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
-    status = serializers.CharField(source='get_status_display')
+    status = serializers.CharField(source="get_status_display")
 
     class Meta:
         model = TripRequest
 
-        fields = [
-            "id",
-            "trip",
-            "user",
-            "status",
-        ]
+        fields = ["id", "trip", "user", "status"]

@@ -7,7 +7,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from trips.models import TripRequest
-from trips.tests.trip_factory import TripFactory, LocationFactory
+from trips.tests.trip_factory import (
+    LocationFactory,
+    TripFactory,
+    TripRequestFactory,
+)
 from trips.views import TripViewSet
 
 list_create_trips_url = reverse("trips-list")
@@ -50,6 +54,7 @@ def trips_with_different_coordinates():
     lissabon_point = LocationFactory(
         point=Point(38.719013, -9.224802, srid=4326)
     )
+
     minsk_grodno = TripFactory(
         start_point=minsk_point, dest_point=grodno_point
     )
@@ -96,6 +101,7 @@ class TestTrips:
             == trip_data["dest_point"]["point"]
         )
         assert float(trip_dict["price"]) == trip_data["price"]
+
         assert trip_dict["free_seats"] == trip_data["num_seats"]
         assert trip_dict["description"] == trip_data["description"]
 
@@ -249,6 +255,17 @@ class TestTrips:
         assert resp.status_code == 200
         assert not resp.json()["passengers"]
 
+    def test_reserve_multiple(self, admin_client):
+        """ Verify that when user attempts to reserve a trip for which
+            user request already exists bad response is returned. """
+        trip = TripFactory(man_approve=True)
+        client_user = User.objects.get(username="admin")
+        TripRequestFactory(trip=trip, user=client_user)
+        reserve_trip_url = reverse("trips-reserve", args=[trip.id])
+        resp = admin_client.post(reserve_trip_url)
+        assert resp.status_code == 400
+        assert resp.data == "You have already requested this trip"
+
     def test_trip_requests(self, admin_client):
         """ Verify that trip requests for a specific trip are
             returned for GET /api/trips/<trip_id>/resuests/. """
@@ -263,3 +280,49 @@ class TestTrips:
         assert resp_dict[0]["id"] == trip_request.id
         assert resp_dict[0]["trip"] == trip.id
         assert resp_dict[0]["user"] == "admin"
+
+    @pytest.mark.parametrize(
+        "url, status",
+        [
+            ("trip-requests-approve", "Approved"),
+            ("trip-requests-decline", "Declined"),
+        ],
+    )
+    def test_request_approve_decline(self, admin_client, url, status):
+        """ Verify that trip requests can be approved(declined) with
+            POST /api/trip-requests/<id>/approve(decline)/. """
+        trip_request = TripRequestFactory()
+        decline_request_url = reverse(url, args=[trip_request.id])
+        resp = admin_client.post(decline_request_url)
+        assert resp.status_code == 200
+        resp_dict = resp.json()
+        assert resp_dict["id"] == trip_request.id
+        assert resp_dict["status"] == status
+
+    def test_cancel(self, admin_client):
+        """  Verify that user can cancel trip request which is active with
+             POST api/trips-requests/<id>/cancel/. """
+        client_user = User.objects.get(username="admin")
+        trip_request = TripRequestFactory(
+            user=client_user, status=TripRequest.ACTIVE
+        )
+        cancel_reservation_url = reverse(
+            "trip-requests-cancel", args=[trip_request.id]
+        )
+        resp = admin_client.post(cancel_reservation_url)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "Inactive"
+
+    def test_cancel_user_removed(self, admin_client):
+        """  Verify that user can cancel trip request which is approved with
+            POST api/trip-requests/<id>/cancel/. """
+        client_user = User.objects.get(username="admin")
+        trip_request = TripRequestFactory(user=client_user)
+        trip_request.approve()
+        cancel_reservation_url = reverse(
+            "trip-requests-cancel", args=[trip_request.id]
+        )
+        resp = admin_client.post(cancel_reservation_url)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "Inactive"
+        assert client_user not in trip_request.trip.passengers.all()

@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
 
-from .models import Trip
+from trips.models import Trip
 
 
 @admin.register(Trip)
-class ShopAdmin(OSMGeoAdmin):
+class TripAdmin(OSMGeoAdmin):
     list_display = (
         "id",
         "driver",
@@ -17,5 +17,4 @@ class ShopAdmin(OSMGeoAdmin):
         "num_seats",
         "man_approve",
         "description",
-        "is_active",
     )

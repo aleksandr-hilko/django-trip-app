@@ -7,7 +7,7 @@ from django.utils import timezone
 from faker import Factory as FakerFactory
 
 from accounts.tests.user_factory import UserFactory
-from trips.models import Trip, Location
+from trips.models import Trip, Location, TripRequest
 
 faker = FakerFactory.create()
 
@@ -49,3 +49,11 @@ class TripFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = Trip
+
+
+class TripRequestFactory(factory.django.DjangoModelFactory):
+    trip = factory.SubFactory(TripFactory)
+    user = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = TripRequest

@@ -32,5 +32,5 @@ urlpatterns = [
         jwt_views.TokenRefreshView.as_view(),
         name="token_refresh",
     ),
-    path("api/trips/", include("trips.urls")),
+    path("api/", include("trips.urls")),
 ]
