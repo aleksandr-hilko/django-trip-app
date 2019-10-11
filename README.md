@@ -51,8 +51,7 @@ App that allow customers to collaborate being moved around the city by either cr
 
 Comment: start_point and dest_point parameters represent geo coordinates of start point and 
 endpoint of a trip, therefore the string input should consist of 2 floats the first is longitude and
-the second is latitude of a point. Supported formats are: 
- "23.5 23.5", "[23.5 23.5]", "[23.5, 23.5]", "(23.5, 23.5)", "23.5, 23.5"
+the second is latitude of a point.
 
  #### 2. GET api/trips/ -  Get trips.
  
@@ -65,13 +64,9 @@ the second is latitude of a point. Supported formats are:
  
     /api/trips/?time1={time1}&time2={time2}&sp={sp}&dp={sp}
     
-    * time1 and time2 - you expect the trip to start between time1 and time2. So say you want to
-      leave from your work between 15.00 and 15.30 on 7 October, then the parameters passed should be
-      ```time1=2019-11-07%2015:00:00&time2=2019-11-08%2015:30:00```
+    * time1 and time2 - you expect the trip to start between time1 and time2. 
     * sp and dp - stands for start point and destination point accordingly. These parameters represent 
-    geo coordinates that you can take from a google map for example. The string input should consist of 2 floats 
-    the first is longitude and the second is latitude of a point. Example:
-    ```sp=53.914356%2027.602271&dp=53.928330%20%2027.630353```
+    geo coordinates that you can take from a google map for example. ``
   
   - Response:
   

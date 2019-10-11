@@ -1,9 +1,9 @@
-from core.utils import str_to_geopoint
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
-from .models import Trip, TripRequest
+from core.utils import str_to_geopoint
+from trips.models import Trip, TripRequest
 
 
 class GeoField(serializers.CharField):
@@ -12,11 +12,13 @@ class GeoField(serializers.CharField):
     """
 
     def to_representation(self, value):
-        """ Convert Point object to string. E.g. Point(23.4, 23.5) -> '[23.4 23.5]' """
+        """ Convert Point object to string.
+            E.g. Point(23.4, 23.5) -> '[23.4 23.5]'. """
         return f"{value.x} {value.y}"
 
     def to_internal_value(self, data):
-        """ Convert string coordinates in Point object. E.g. '23.4 23.5'-> Point(23.4, 23.5) """
+        """ Convert string coordinates in Point object.
+            E.g. '23.4 23.5'-> Point(23.4, 23.5). """
         return str_to_geopoint(data)
 
 
@@ -44,10 +46,10 @@ class TripSerializer(ModelSerializer):
             "man_approve",
             "description",
             "is_active",
-            'dist1',
-            'dist2',
+            "dist1",
+            "dist2",
         ]
-        extra_kwargs = {'num_seats': {'write_only': True}}
+        extra_kwargs = {"num_seats": {"write_only": True}}
 
     def get_free_seats(self, obj):
         return obj.free_seats
@@ -57,7 +59,9 @@ class TripSerializer(ModelSerializer):
         Check that the departure time is in the future
         """
         if value < timezone.now():
-            raise serializers.ValidationError("Departure time has expired. Please correct the time")
+            raise serializers.ValidationError(
+                "Departure time has expired. Please correct the time"
+            )
         return value
 
 
@@ -66,8 +70,4 @@ class TripRequestSerializer(ModelSerializer):
 
     class Meta:
         model = TripRequest
-        fields = [
-            "id",
-            "trip",
-            "user",
-        ]
+        fields = ["id", "trip", "user"]
