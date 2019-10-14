@@ -1,7 +1,12 @@
 import re
 
+from django.conf import settings
+from django.contrib.gis.geos import Point
 from django.contrib.gis.geos import fromstr
+from geopy import Nominatim
 from rest_framework.exceptions import ValidationError
+
+geolocator = Nominatim(user_agent=settings.OPEN_STREET_MAP_KEY)
 
 
 def raise_for_status(resp):
@@ -34,3 +39,13 @@ def str_to_geopoint(data):
             " Latitude coordinates should be in range -180...180 "
         )
     return fromstr(f"POINT({lon} {lat})", srid=4326)
+
+
+def geocode_or_raise_validation_error(address):
+    geo_location = geolocator.geocode(f"{address}")
+    if not geo_location:
+        raise ValidationError(
+            "Please correct the address or provide geo coordinates. "
+            f"We can't geocode address: {address}"
+        )
+    return Point(geo_location.latitude, geo_location.longitude, srid=4326)
