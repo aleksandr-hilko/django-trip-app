@@ -16,10 +16,10 @@ class UserCreate(CreateAPIView):
 class UserList(ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser, ]
+    permission_classes = [IsAdminUser]
 
 
 class UserDetail(RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthOwnerOrAdminOnly, ]
+    permission_classes = [IsAuthOwnerOrAdminOnly]
