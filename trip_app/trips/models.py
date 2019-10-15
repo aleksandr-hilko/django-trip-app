@@ -15,7 +15,7 @@ class Trip(models.Model):
     dep_time = models.DateTimeField()
     start_point = geo_models.PointField()
     dest_point = geo_models.PointField()
-    price = models.PositiveIntegerField(null=True)
+    price = models.DecimalField(max_digits=6, decimal_places=2)
     num_seats = models.PositiveIntegerField()
     man_approve = models.BooleanField(default=True)
     description = models.TextField(blank=True)

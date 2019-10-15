@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 
 import factory
@@ -22,7 +23,7 @@ class TripFactory(factory.django.DjangoModelFactory):
     dest_point = Point(
         float(faker.latitude()), float(faker.longitude()), srid=4326
     )
-    price = faker.random_number()
+    price = round(random.uniform(1, 10000), 2)
     num_seats = faker.random_digit_not_null()
     description = "test description"
 

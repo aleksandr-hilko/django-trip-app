@@ -53,9 +53,9 @@ def test_driver_update(client, create_user):
     trip = TripFactory(driver=user)
     client.login(username=username, password=password)
     url = reverse("trips-detail", args=[trip.id])
-    resp = client.patch(url, {"price": 20}, content_type="application/json")
+    resp = client.patch(url, {"price": 20.00}, content_type="application/json")
     assert resp.status_code == 200
-    assert resp.json()["price"] == 20
+    assert float(resp.json()["price"]) == 20.00
 
 
 @pytest.mark.django_db

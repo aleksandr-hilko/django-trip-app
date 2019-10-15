@@ -77,7 +77,7 @@ class TestTrips:
         )
         assert trip_dict["start_point"] == trip_data["start_point"]
         assert trip_dict["dest_point"] == trip_data["dest_point"]
-        assert trip_dict["price"] == trip_data["price"]
+        assert float(trip_dict["price"]) == trip_data["price"]
         assert trip_dict["free_seats"] == trip_data["num_seats"]
         assert trip_dict["description"] == trip_data["description"]
 
@@ -157,7 +157,7 @@ class TestTrips:
             resp_dict["dest_point"]
             == f"{trip.dest_point.x} {trip.dest_point.y}"
         )
-        assert resp_dict["price"] == trip.price
+        assert float(resp_dict["price"]) == trip.price
         assert resp_dict["free_seats"] == trip.num_seats
         assert resp_dict["description"] == trip.description
 
@@ -172,7 +172,7 @@ class TestTrips:
         assert resp.status_code == 200
         assert resp_dict["start_point"] == trip_data["start_point"]
         assert resp_dict["dest_point"] == trip_data["dest_point"]
-        assert resp_dict["price"] == trip_data["price"]
+        assert float(resp_dict["price"]) == trip_data["price"]
         assert resp_dict["free_seats"] == trip_data["num_seats"]
         assert resp_dict["description"] == trip_data["description"]
 
