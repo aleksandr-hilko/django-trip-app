@@ -2,11 +2,8 @@ from rest_framework import permissions
 
 
 class IsAuthOwnerOrAdminOnly(permissions.IsAuthenticated):
-    """
-    Custom permission to only allow owners and admins to get/edit it.
+    """ Permissions to allow only owners and admins to get/edit/delete a user.
     """
 
     def has_object_permission(self, request, view, obj):
-        # Write permissions are only allowed to the owner or admin
-        is_auth = super().has_object_permission(request, view, obj)
-        return (is_auth and obj == request.user) or (is_auth and request.user.is_superuser)
+        return obj == request.user or request.user.is_superuser

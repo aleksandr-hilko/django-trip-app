@@ -1,9 +1,11 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
-from .views import TripListCreateApiView
+from . import views
 
-app_name = 'trips'
+router = DefaultRouter()
+router.register('', views.TripViewSet, base_name="trips")
 
 urlpatterns = [
-    path("", TripListCreateApiView.as_view(), name="list_create"),
+    path('', include(router.urls)),
 ]

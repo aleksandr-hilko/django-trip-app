@@ -1,12 +1,13 @@
+import random
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 
-from ..serializers import TripSerializer
-from .trip_factory import TripFactory
+from .trip_factory import TripFactory, faker
 
 
-@pytest.fixture(
-    params=[3, 10]
-)
+@pytest.fixture(params=[3, 10])
 def trips(request):
     """ Create multiple trips depending on params and return created objects """
     qty = request.param
@@ -17,10 +18,12 @@ def trips(request):
 def trip_data():
     """ Create a trip model without touching database and return its dict
         repr for using as a request payload """
-    trip = TripFactory.build()
-    serializer = TripSerializer(trip)
-    data = serializer.data
-    del data["id"]
-    del data["driver"]
-    del data["passengers"]
+    data = {
+        "dep_time": (timezone.now() + timedelta(days=1)),
+        "start_point": f"{faker.latitude()} {faker.longitude()}",
+        "dest_point": f"{faker.latitude()} {faker.longitude()}",
+        "price": round(random.uniform(1, 10000), 2),
+        "num_seats": faker.random_digit_not_null(),
+        "description": "test description",
+    }
     return data
