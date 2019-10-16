@@ -5,7 +5,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework_gis import fields as geofields
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
-from core.utils import geocode_or_raise_validation_error, validate_geo_point
+from core.utils import geocode_or_validation_error, validate_geo_point
 from trips.models import Trip, TripRequest, Location
 
 
@@ -30,33 +30,29 @@ class LocationSerializer(GeoFeatureModelSerializer):
             raise ValidationError("Specify either address or geo coords")
         if not attrs.get("point"):
             address = attrs["address"]
-            geocode_or_raise_validation_error(address)
+            geocode_or_validation_error(address)
         return attrs
 
     def create(self, validated_data):
-        """ Override of the base create method
+        """ Override of the base create method.
 
             If no geo coordinate is provided, geocode the address and save
-            the model, otherwise just call base create() to save the model
+            the model, otherwise just call base create() to save the model.
             """
         if not validated_data.get("point"):
             address = validated_data["address"]
-            validated_data["point"] = geocode_or_raise_validation_error(
-                address
-            )
+            validated_data["point"] = geocode_or_validation_error(address)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        """ Override of the base update method
+        """ Override of the base update method.
 
             If no geo coordinate is provided, geocode the address and save
-            the model, otherwise just call base update() to update the model
+            the model, otherwise just call base update() to update the model.
             """
         if not validated_data.get("point"):
             address = validated_data["address"]
-            validated_data["point"] = geocode_or_raise_validation_error(
-                address
-            )
+            validated_data["point"] = geocode_or_validation_error(address)
         return super().update(instance, validated_data)
 
     class Meta:
@@ -138,11 +134,11 @@ class TripSerializer(ModelSerializer):
 
     def validate_dep_time(self, value):
         """
-        Check that the departure time is in the future
+        Check that the departure time is in the future.
         """
         if value < timezone.now():
             raise serializers.ValidationError(
-                "Departure time has expired. Please correct the time"
+                "Departure time has expired. Please correct the time."
             )
         return value
 

@@ -2,7 +2,6 @@ import re
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
-from django.contrib.gis.geos import fromstr
 from geopy import Nominatim
 from rest_framework.exceptions import ValidationError
 
@@ -10,7 +9,7 @@ geolocator = Nominatim(user_agent=settings.OPEN_STREET_MAP_KEY)
 
 
 def raise_for_status(resp):
-    """ Raises an exception if it occurs given response object """
+    """ Raises an exception if it occurs given response object. """
 
     http_error_msg = ""
 
@@ -24,29 +23,34 @@ def raise_for_status(resp):
         raise Exception(http_error_msg)
 
 
-def str_to_geopoint(data):
+def str_to_geopoint_or_validation_error(data):
     """ Convert string coordinates into a  Point object.
         Regex is used to handle different incoming formats.
         E.g. '23.4 23.5', '[23.4 23.5]', '(23.4 23.5)' would be converted into
-        the same object Point(23.4, 23.5) """
-    lon, lat = re.findall(r"[-+]?\d*\.?\d+|\d+", data)
-    validate_geo_point(lat, lon)
-    return fromstr(f"POINT({lon} {lat})", srid=4326)
+        the same object Point(23.4, 23.5). """
+    try:
+        lat_str, lon_str = re.findall(r"[-+]?\d*\.?\d+|\d+", data)
+        lat, lon = float(lat_str), float(lon_str)
+    except ValueError:
+        raise ValidationError(f"Cannot parse {data} into geo coordinates")
+    else:
+        validate_geo_point(lat, lon)
+    return Point(lat, lon, srid=4326)
 
 
 def validate_geo_point(lat, lon):
-    """ Raise validation error on invalid coords """
-    if not -180 <= float(lat) <= 180:
+    """ Raise validation error on invalid coords. """
+    if abs(lat) > 180:
         raise ValidationError(
-            " Latitude coordinates should be in range -180...180 "
+            " Latitude coordinates should be in range -180...180. "
         )
-    if not -90 <= float(lon) <= 90:
+    if abs(lon) > 90:
         raise ValidationError(
-            " Longitude coordinates should be in range -90...90 "
+            " Longitude coordinates should be in range -90...90. "
         )
 
 
-def geocode_or_raise_validation_error(address):
+def geocode_or_validation_error(address):
     """ Geocode given address.
         Will raise an error if the attempt wasn't successfull. """
     geo_location = geolocator.geocode(f"{address}")

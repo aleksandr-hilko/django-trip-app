@@ -8,7 +8,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from core.utils import str_to_geopoint, geocode_or_raise_validation_error
+from core.utils import (
+    str_to_geopoint_or_validation_error,
+    geocode_or_validation_error,
+)
 from trips.models import Trip, TripRequest
 from trips.permissions import IsTripDriverOrAdmin
 from trips.serializers import TripSerializer, TripRequestSerializer
@@ -49,11 +52,11 @@ class TripViewSet(ModelViewSet):
         if geo_coords or address_coords:
             try:
                 if geo_coords:
-                    geo_point1 = str_to_geopoint(point1)
-                    geo_point2 = str_to_geopoint(point2)
+                    geo_point1 = str_to_geopoint_or_validation_error(point1)
+                    geo_point2 = str_to_geopoint_or_validation_error(point2)
                 elif address_coords:
-                    geo_point1 = geocode_or_raise_validation_error(address1)
-                    geo_point2 = geocode_or_raise_validation_error(address2)
+                    geo_point1 = geocode_or_validation_error(address1)
+                    geo_point2 = geocode_or_validation_error(address2)
             except ValidationError:
                 # return empty queryset
                 return Trip.objects.none()

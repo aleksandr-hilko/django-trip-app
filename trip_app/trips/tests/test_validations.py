@@ -6,7 +6,10 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from core.utils import str_to_geopoint, geocode_or_raise_validation_error
+from core.utils import (
+    str_to_geopoint_or_validation_error,
+    geocode_or_validation_error,
+)
 from trips.serializers import LocationSerializer
 
 MAX_LONGITUDE = 90.0
@@ -60,7 +63,7 @@ def test_invalid_dep_time(admin_client, trip_data):
 def test_convert_to_geopoint(str_coord):
     """ Verify 'str_to_geopoint' function that is responsible for serializing
     incoming string coordinates to django.contrib.gis.geos.Point objects. """
-    point = str_to_geopoint(str_coord)
+    point = str_to_geopoint_or_validation_error(str_coord)
     assert point == Point(23.5, 23.5, srid=4326)
     assert point.x == 23.5
     assert point.y == 23.5
@@ -79,7 +82,7 @@ def test_convert_to_geopoint(str_coord):
 )
 def test_geocode(address):
     """ Verify 'geocode_or_raise_validation_error' can geocode address. """
-    point = geocode_or_raise_validation_error(address)
+    point = geocode_or_validation_error(address)
     assert point
 
 
@@ -90,7 +93,7 @@ def test_invalid_geocode(invalid_address):
     """ Verify that 'geocode_or_raise_validation_error' function
         raises Validation error for invalid address. """
     with pytest.raises(ValidationError) as exc:
-        geocode_or_raise_validation_error(invalid_address)
+        geocode_or_validation_error(invalid_address)
     assert f"We can't geocode address: {invalid_address}" in str(exc.value)
 
 
