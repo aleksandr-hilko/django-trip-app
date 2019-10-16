@@ -43,19 +43,21 @@ class TripViewSet(ModelViewSet):
         point2 = query_params.get("point2")
         address1 = query_params.get("addr1")
         address2 = query_params.get("addr2")
-        try:
-            geo_point1, geo_point2 = None, None
-            if point1 and point2:
-                geo_point1 = str_to_geopoint(point1)
-                geo_point2 = str_to_geopoint(point2)
-            elif address1 and address2:
-                geo_point1 = geocode_or_raise_validation_error(address1)
-                geo_point2 = geocode_or_raise_validation_error(address2)
-        except ValidationError:
-            # return empty queryset
-            return Trip.objects.none()
-        else:
-            if geo_point1 and geo_point2:
+        geo_coords = bool(point1 and point2)
+        address_coords = bool(address1 and address2)
+
+        if geo_coords or address_coords:
+            try:
+                if geo_coords:
+                    geo_point1 = str_to_geopoint(point1)
+                    geo_point2 = str_to_geopoint(point2)
+                elif address_coords:
+                    geo_point1 = geocode_or_raise_validation_error(address1)
+                    geo_point2 = geocode_or_raise_validation_error(address2)
+            except ValidationError:
+                # return empty queryset
+                return Trip.objects.none()
+            else:
                 # Annotate queryset with 2 attributes:
                 # dist1 - distance between user and trip start point;
                 # dist2 - between user and trip end point.

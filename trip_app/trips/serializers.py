@@ -5,7 +5,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework_gis import fields as geofields
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
-from core.utils import geocode_or_raise_validation_error
+from core.utils import geocode_or_raise_validation_error, validate_geo_point
 from trips.models import Trip, TripRequest, Location
 
 
@@ -16,14 +16,7 @@ class LocationSerializer(GeoFeatureModelSerializer):
 
     def validate_point(self, value):
         """ Point field validation. """
-        if not -180 <= value.x <= 180:
-            raise ValidationError(
-                " Latitude coordinates should be in range -180...180 "
-            )
-        if not -90 <= value.y <= 90:
-            raise ValidationError(
-                " Longitude coordinates should be in range -90...90 "
-            )
+        validate_geo_point(value.x, value.y)
         return value
 
     def validate(self, attrs):

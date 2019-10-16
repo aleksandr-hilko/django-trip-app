@@ -24,7 +24,7 @@ def trip_data():
             "point": {"type": "Point", "coordinates": [5.000000, 23.000000]}
         },
         "dest_point": {
-            "point": {"type": "Point", "coordinates": [5.000000, 23.000000]}
+            "point": {"type": "Point", "coordinates": [10.000000, 23.000000]}
         },
         "price": round(random.uniform(1, 10000), 2),
         "num_seats": faker.random_digit_not_null(),

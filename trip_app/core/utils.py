@@ -30,18 +30,25 @@ def str_to_geopoint(data):
         E.g. '23.4 23.5', '[23.4 23.5]', '(23.4 23.5)' would be converted into
         the same object Point(23.4, 23.5) """
     lon, lat = re.findall(r"[-+]?\d*\.?\d+|\d+", data)
-    if not -90 <= float(lon) <= 90:
-        raise ValidationError(
-            " Longitude coordinates should be in range -90...90 "
-        )
+    validate_geo_point(lat, lon)
+    return fromstr(f"POINT({lon} {lat})", srid=4326)
+
+
+def validate_geo_point(lat, lon):
+    """ Raise validation error on invalid coords """
     if not -180 <= float(lat) <= 180:
         raise ValidationError(
             " Latitude coordinates should be in range -180...180 "
         )
-    return fromstr(f"POINT({lon} {lat})", srid=4326)
+    if not -90 <= float(lon) <= 90:
+        raise ValidationError(
+            " Longitude coordinates should be in range -90...90 "
+        )
 
 
 def geocode_or_raise_validation_error(address):
+    """ Geocode given address.
+        Will raise an error if the attempt wasn't successfull. """
     geo_location = geolocator.geocode(f"{address}")
     if not geo_location:
         raise ValidationError(
