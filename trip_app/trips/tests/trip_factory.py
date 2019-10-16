@@ -7,9 +7,19 @@ from django.utils import timezone
 from faker import Factory as FakerFactory
 
 from accounts.tests.user_factory import UserFactory
-from trips.models import Trip
+from trips.models import Trip, Location
 
 faker = FakerFactory.create()
+
+
+class LocationFactory(factory.django.DjangoModelFactory):
+    """ Location factory. """
+
+    address = faker.address()
+    point = Point(float(faker.latitude()), float(faker.longitude()), srid=4326)
+
+    class Meta:
+        model = Location
 
 
 class TripFactory(factory.django.DjangoModelFactory):
@@ -17,12 +27,8 @@ class TripFactory(factory.django.DjangoModelFactory):
 
     driver = factory.SubFactory(UserFactory)
     dep_time = timezone.now() + timedelta(days=1)
-    start_point = Point(
-        float(faker.latitude()), float(faker.longitude()), srid=4326
-    )
-    dest_point = Point(
-        float(faker.latitude()), float(faker.longitude()), srid=4326
-    )
+    start_point = factory.SubFactory(LocationFactory)
+    dest_point = factory.SubFactory(LocationFactory)
     price = round(random.uniform(1, 10000), 2)
     num_seats = faker.random_digit_not_null()
     description = "test description"

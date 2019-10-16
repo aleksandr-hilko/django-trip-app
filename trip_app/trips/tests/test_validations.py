@@ -30,13 +30,15 @@ list_create_trips_url = reverse("trips-list")
 def test_incorrect_coords(admin_client, incorrect_coords, trip_data):
     """ Verify that Trip can't be created having incorrect coordinate """
     longitude, latitude, incorrect_arg = incorrect_coords
-    start_point = f"{longitude}, {latitude}"
-    trip_data["start_point"] = start_point
-    resp = admin_client.post(list_create_trips_url, trip_data)
+    start_point = f"POINT({latitude} {longitude})"
+    trip_data["start_point"]["point"] = start_point
+    resp = admin_client.post(
+        list_create_trips_url, trip_data, content_type="application/json"
+    )
     assert resp.status_code == 400
     assert (
         f"{incorrect_arg} coordinates should be in range "
-        in resp.json()["start_point"][0]
+        in resp.json()["start_point"]["point"][0]
     )
 
 

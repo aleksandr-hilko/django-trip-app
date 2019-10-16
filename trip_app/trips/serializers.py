@@ -14,8 +14,20 @@ class LocationSerializer(GeoFeatureModelSerializer):
 
     point = geofields.GeometryField(required=False)
 
+    def validate_point(self, value):
+        """ Point field validation. """
+        if not -180 <= value.x <= 180:
+            raise ValidationError(
+                " Latitude coordinates should be in range -180...180 "
+            )
+        if not -90 <= value.y <= 90:
+            raise ValidationError(
+                " Longitude coordinates should be in range -90...90 "
+            )
+        return value
+
     def validate(self, attrs):
-        """ Object level validation
+        """ Object level validation.
 
             First verify that at least one location attribute is provided,
             if no geo coordinate is provided, verify that address can be
@@ -91,7 +103,7 @@ class TripSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """ Overwrite the base create method in order to explicitly
-            specify how the child relationships should be saved.
+            handle nested serializers relationships.
             """
         start_point_data, dest_point_data = (
             validated_data.get("start_point"),
@@ -109,7 +121,7 @@ class TripSerializer(ModelSerializer):
 
     def update(self, instance, validated_data):
         """ Overwrite the base update method in order to explicitly
-            specify how the child relationships should be saved.
+            handle nested serializers relationships.
             """
         start_point_data, dest_point_data = (
             validated_data.get("start_point"),

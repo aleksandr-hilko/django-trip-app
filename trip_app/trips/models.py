@@ -19,13 +19,13 @@ class Trip(models.Model):
     )
     dep_time = models.DateTimeField()
     price = models.DecimalField(max_digits=6, decimal_places=2)
-    start_point = models.OneToOneField(
+    start_point = models.ForeignKey(
         Location,
         related_name="start_point_of",
         on_delete=models.SET_NULL,
         null=True,
     )
-    dest_point = models.OneToOneField(
+    dest_point = models.ForeignKey(
         Location,
         related_name="dest_point_of",
         on_delete=models.SET_NULL,
