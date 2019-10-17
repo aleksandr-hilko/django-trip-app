@@ -23,11 +23,15 @@ def raise_for_status(resp):
         raise Exception(http_error_msg)
 
 
-def str_to_geopoint_or_validation_error(data):
+def str_to_geopoint(data):
     """ Convert string coordinates into a  Point object.
+
         Regex is used to handle different incoming formats.
         E.g. '23.4 23.5', '[23.4 23.5]', '(23.4 23.5)' would be converted into
-        the same object Point(23.4, 23.5). """
+        the same object Point(23.4, 23.5).
+
+        :raises: ValidationError: If incoming data can't be converted
+        to float or if it doesn't fit into coordinates range """
     try:
         lat_str, lon_str = re.findall(r"[-+]?\d*\.?\d+|\d+", data)
         lat, lon = float(lat_str), float(lon_str)
@@ -50,9 +54,10 @@ def validate_geo_point(lat, lon):
         )
 
 
-def geocode_or_validation_error(address):
+def geocode(address):
     """ Geocode given address.
-        Will raise an error if the attempt wasn't successfull. """
+
+        :raises: ValidationError: If data can't be geocoded. """
     geo_location = geolocator.geocode(f"{address}")
     if not geo_location:
         raise ValidationError(

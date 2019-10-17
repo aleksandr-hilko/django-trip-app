@@ -5,7 +5,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework_gis import fields as geofields
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
-from core.utils import geocode_or_validation_error, validate_geo_point
+from core.utils import geocode, validate_geo_point
 from trips.models import Trip, TripRequest, Location
 
 
@@ -30,7 +30,7 @@ class LocationSerializer(GeoFeatureModelSerializer):
             raise ValidationError("Specify either address or geo coords")
         if not attrs.get("point"):
             address = attrs["address"]
-            geocode_or_validation_error(address)
+            geocode(address)
         return attrs
 
     def create(self, validated_data):
@@ -41,7 +41,7 @@ class LocationSerializer(GeoFeatureModelSerializer):
             """
         if not validated_data.get("point"):
             address = validated_data["address"]
-            validated_data["point"] = geocode_or_validation_error(address)
+            validated_data["point"] = geocode(address)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -52,7 +52,7 @@ class LocationSerializer(GeoFeatureModelSerializer):
             """
         if not validated_data.get("point"):
             address = validated_data["address"]
-            validated_data["point"] = geocode_or_validation_error(address)
+            validated_data["point"] = geocode(address)
         return super().update(instance, validated_data)
 
     class Meta:

@@ -2,16 +2,12 @@ from django.contrib.gis.db.models.functions import Distance
 from django.db.models import F
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from core.utils import (
-    str_to_geopoint_or_validation_error,
-    geocode_or_validation_error,
-)
+from core.utils import str_to_geopoint, geocode
 from trips.models import Trip, TripRequest
 from trips.permissions import IsTripDriverOrAdmin
 from trips.serializers import TripSerializer, TripRequestSerializer
@@ -48,30 +44,25 @@ class TripViewSet(ModelViewSet):
         address2 = query_params.get("addr2")
         geo_coords = bool(point1 and point2)
         address_coords = bool(address1 and address2)
-
         if geo_coords or address_coords:
-            try:
-                if geo_coords:
-                    geo_point1 = str_to_geopoint_or_validation_error(point1)
-                    geo_point2 = str_to_geopoint_or_validation_error(point2)
-                elif address_coords:
-                    geo_point1 = geocode_or_validation_error(address1)
-                    geo_point2 = geocode_or_validation_error(address2)
-            except ValidationError:
-                # return empty queryset
-                return Trip.objects.none()
-            else:
-                # Annotate queryset with 2 attributes:
-                # dist1 - distance between user and trip start point;
-                # dist2 - between user and trip end point.
-                # Order the queryset in the ascending order by sum distance,
-                queryset = (
-                    queryset.annotate(
-                        dist1=Distance("start_point__point", geo_point1)
-                    )
-                    .annotate(dist2=Distance("dest_point__point", geo_point2))
-                    .order_by(F("dist1") + F("dist2"))
+            if geo_coords:
+                geo_point1 = str_to_geopoint(point1)
+                geo_point2 = str_to_geopoint(point2)
+            elif address_coords:
+                geo_point1 = geocode(address1)
+                geo_point2 = geocode(address2)
+
+            # Annotate queryset with 2 attributes:
+            # dist1 - distance between user and trip start point;
+            # dist2 - between user and trip end point.
+            # Order the queryset in the ascending order by sum distance,
+            queryset = (
+                queryset.annotate(
+                    dist1=Distance("start_point__point", geo_point1)
                 )
+                .annotate(dist2=Distance("dest_point__point", geo_point2))
+                .order_by(F("dist1") + F("dist2"))
+            )
 
         return queryset
 
