@@ -18,7 +18,7 @@ services:
       DB_NAME: $DB_NAME
       OPENSTREET_KEY: $OPENSTREET_KEY
       TRIP_APP_SECRET: $TRIP_APP_SECRET
-    command: python trip_app/manage.py runserver 0.0.0.0:8000
+    command: dockerize -wait tcp://db:5432 python trip_app/manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
     depends_on:
