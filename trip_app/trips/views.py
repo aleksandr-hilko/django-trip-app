@@ -42,9 +42,10 @@ class TripViewSet(ModelViewSet):
         point2 = query_params.get("point2")
         address1 = query_params.get("addr1")
         address2 = query_params.get("addr2")
-        geo_coords = bool(point1 and point2)
-        address_coords = bool(address1 and address2)
+        geo_coords = all([point1, point2])
+        address_coords = all([address1, address2])
         if geo_coords or address_coords:
+            # TODO: Consider possibility of using factory pattern here
             if geo_coords:
                 geo_point1 = str_to_geopoint(point1)
                 geo_point2 = str_to_geopoint(point2)

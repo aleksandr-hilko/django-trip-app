@@ -33,7 +33,7 @@ def str_to_geopoint(data):
         :raises: ValidationError: If incoming data can't be converted
         to float or if it doesn't fit into coordinates range """
     latlon = re.findall(r"[-+]?\d*\.?\d+|\d+", data)
-    if not latlon:
+    if len(latlon) != 2:
         raise ValidationError(f"Cannot parse {data} into geo coordinates")
     lat, lon = float(latlon[0]), float(latlon[1])
     validate_geo_point(lat, lon)
