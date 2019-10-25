@@ -25,7 +25,9 @@ def get_env_variable(var_name):
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
@@ -49,8 +51,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     "rest_framework",
+    "rest_framework_simplejwt",
     "rest_framework_gis",
     "django_filters",
+    "crispy_forms",
+    "webpack_loader",
     "core",
     "trips",
     "accounts",
@@ -71,7 +76,7 @@ ROOT_URLCONF = "trip_app.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -100,6 +105,9 @@ DATABASES = {
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
 AUTH_USER_MODEL = "accounts.User"
+
+# django-crispy-forms
+CRISPY_TEMPLATE_PACK = "bootstrap4"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -144,6 +152,13 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
+}
+
+WEBPACK_LOADER = {
+    "DEFAULT": {
+        "BUNDLE_DIR_NAME": "dist/",
+        "STATS_FILE": os.path.join(BASE_DIR, "frontend", "webpack-stats.json"),
+    }
 }
 
 # Internationalization

@@ -15,10 +15,19 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework_simplejwt import views as jwt_views
+from django_registration.backends.one_step.views import RegistrationView
+from accounts.forms import CustomUserForm
+from core.views import IndexTemplateView
 
 urlpatterns = [
+    path(
+        "accounts/register/",
+        RegistrationView.as_view(form_class=CustomUserForm, success_url="/"),
+        name="django_registration_register",
+    ),
+    path("accounts/", include("django.contrib.auth.urls")),
     path("admin/", admin.site.urls),
     path("api/accounts/", include("accounts.urls")),
     path("api-auth/", include("rest_framework.urls")),
@@ -33,4 +42,5 @@ urlpatterns = [
         name="token_refresh",
     ),
     path("api/", include("trips.urls")),
+    re_path(r"^.*$", IndexTemplateView.as_view(), name="entry-point"),
 ]

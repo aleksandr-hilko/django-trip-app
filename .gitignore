@@ -106,3 +106,6 @@ venv.bak/
 .idea
 
 web-django
+
+# VS Code
+.vscode
