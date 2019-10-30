@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from trips.models import TripRequest
-from trips.tests.trip_factory import TripFactory
+from trips.tests.trip_factory import TripFactory, LocationFactory
 from trips.views import TripViewSet
 
 list_create_trips_url = reverse("trips-list")
@@ -34,12 +34,22 @@ def trips_with_different_coordinates():
         and destination points.
         (E.g. Minsk - Grodno is the minimum distance,
               whereas Minsk - Lissabon is the maximum) """
-    minsk_point = Point(53.910206, 27.566264, srid=4326)
-    grodno_point = Point(53.669742, 23.822384, srid=4326)
-    warsaw_point = Point(52.219361, 21.013097, srid=4326)
-    berlin_point = Point(52.514257, 13.403819, srid=4326)
-    london_point = Point(51.510363, -0.124398, srid=4326)
-    lissabon_point = Point(38.719013, -9.224802, srid=4326)
+    minsk_point = LocationFactory(point=Point(53.910206, 27.566264, srid=4326))
+    grodno_point = LocationFactory(
+        point=Point(53.669742, 23.822384, srid=4326)
+    )
+    warsaw_point = LocationFactory(
+        point=Point(52.219361, 21.013097, srid=4326)
+    )
+    berlin_point = LocationFactory(
+        point=Point(52.514257, 13.403819, srid=4326)
+    )
+    london_point = LocationFactory(
+        point=Point(51.510363, -0.124398, srid=4326)
+    )
+    lissabon_point = LocationFactory(
+        point=Point(38.719013, -9.224802, srid=4326)
+    )
     minsk_grodno = TripFactory(
         start_point=minsk_point, dest_point=grodno_point
     )
@@ -68,15 +78,23 @@ def trips_with_different_coordinates():
 class TestTrips:
     def test_create(self, admin_client, trip_data):
         """ Create a new trip via POST api/trips/. """
-        resp = admin_client.post(list_create_trips_url, trip_data)
+        resp = admin_client.post(
+            list_create_trips_url, trip_data, content_type="application/json"
+        )
         assert resp.status_code == 201
         trip_dict = resp.json()
         assert trip_dict["driver"] == "admin"
         assert trip_dict["dep_time"] == trip_data["dep_time"].strftime(
             "%m/%d/%Y %H:%M:%S"
         )
-        assert trip_dict["start_point"] == trip_data["start_point"]
-        assert trip_dict["dest_point"] == trip_data["dest_point"]
+        assert (
+            trip_dict["start_point"]["geometry"]
+            == trip_data["start_point"]["point"]
+        )
+        assert (
+            trip_dict["dest_point"]["geometry"]
+            == trip_data["dest_point"]["point"]
+        )
         assert float(trip_dict["price"]) == trip_data["price"]
         assert trip_dict["free_seats"] == trip_data["num_seats"]
         assert trip_dict["description"] == trip_data["description"]
@@ -103,11 +121,12 @@ class TestTrips:
             between user coordinates and trips coordinates. """
         exp_trip_order = [trip.id for trip in trips_with_different_coordinates]
         user_sp, user_dp = (
-            trips_with_different_coordinates[0].start_point,
-            trips_with_different_coordinates[0].dest_point,
+            trips_with_different_coordinates[0].start_point.point,
+            trips_with_different_coordinates[0].dest_point.point,
         )
+
         resp = admin_client.get(
-            f"{list_create_trips_url}?sp={user_sp.x},{user_sp.y}&dp={user_dp.x},{user_dp.y}"
+            f"{list_create_trips_url}?point1={user_sp.x},{user_sp.y}&point2={user_dp.x},{user_dp.y}"
         )
         assert resp.status_code == 200
         resp_dict = resp.json()
@@ -149,14 +168,6 @@ class TestTrips:
         assert resp.status_code == 200
         resp_dict = resp.json()
         assert resp_dict["driver"] == trip.driver.username
-        assert (
-            resp_dict["start_point"]
-            == f"{trip.start_point.x} {trip.start_point.y}"
-        )
-        assert (
-            resp_dict["dest_point"]
-            == f"{trip.dest_point.x} {trip.dest_point.y}"
-        )
         assert float(resp_dict["price"]) == trip.price
         assert resp_dict["free_seats"] == trip.num_seats
         assert resp_dict["description"] == trip.description
@@ -170,8 +181,14 @@ class TestTrips:
         )
         resp_dict = resp.json()
         assert resp.status_code == 200
-        assert resp_dict["start_point"] == trip_data["start_point"]
-        assert resp_dict["dest_point"] == trip_data["dest_point"]
+        assert (
+            resp_dict["start_point"]["geometry"]
+            == trip_data["start_point"]["point"]
+        )
+        assert (
+            resp_dict["dest_point"]["geometry"]
+            == trip_data["dest_point"]["point"]
+        )
         assert float(resp_dict["price"]) == trip_data["price"]
         assert resp_dict["free_seats"] == trip_data["num_seats"]
         assert resp_dict["description"] == trip_data["description"]

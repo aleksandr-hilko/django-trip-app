@@ -20,8 +20,12 @@ def trip_data():
         repr for using as a request payload """
     data = {
         "dep_time": (timezone.now() + timedelta(days=1)),
-        "start_point": f"{faker.latitude()} {faker.longitude()}",
-        "dest_point": f"{faker.latitude()} {faker.longitude()}",
+        "start_point": {
+            "point": {"type": "Point", "coordinates": [5.000000, 23.000000]}
+        },
+        "dest_point": {
+            "point": {"type": "Point", "coordinates": [10.000000, 23.000000]}
+        },
         "price": round(random.uniform(1, 10000), 2),
         "num_seats": faker.random_digit_not_null(),
         "description": "test description",

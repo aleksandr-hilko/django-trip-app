@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from core.utils import str_to_geopoint
+from core.utils import str_to_geopoint, geocode
 from trips.models import Trip, TripRequest
 from trips.permissions import IsTripDriverOrAdmin
 from trips.serializers import TripSerializer, TripRequestSerializer
@@ -34,22 +34,34 @@ class TripViewSet(ModelViewSet):
 
         time1 = query_params.get("time1")
         time2 = query_params.get("time2")
-        start_point = query_params.get("sp")
-        dest_point = query_params.get("dp")
 
         if time1 and time2:
             queryset = queryset.filter(dep_time__gt=time1, dep_time__lt=time2)
 
-        if start_point and dest_point:
-            start_point = str_to_geopoint(start_point)
-            dest_point = str_to_geopoint(dest_point)
+        point1 = query_params.get("point1")
+        point2 = query_params.get("point2")
+        address1 = query_params.get("addr1")
+        address2 = query_params.get("addr2")
+        geo_coords = all([point1, point2])
+        address_coords = all([address1, address2])
+        if geo_coords or address_coords:
+            # TODO: Consider possibility of using factory pattern here
+            if geo_coords:
+                geo_point1 = str_to_geopoint(point1)
+                geo_point2 = str_to_geopoint(point2)
+            elif address_coords:
+                geo_point1 = geocode(address1)
+                geo_point2 = geocode(address2)
+
             # Annotate queryset with 2 attributes:
             # dist1 - distance between user and trip start point;
             # dist2 - between user and trip end point.
             # Order the queryset in the ascending order by sum distance,
             queryset = (
-                queryset.annotate(dist1=Distance("start_point", start_point))
-                .annotate(dist2=Distance("dest_point", dest_point))
+                queryset.annotate(
+                    dist1=Distance("start_point__point", geo_point1)
+                )
+                .annotate(dist2=Distance("dest_point__point", geo_point2))
                 .order_by(F("dist1") + F("dist2"))
             )
 

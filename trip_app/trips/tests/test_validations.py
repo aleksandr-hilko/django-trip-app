@@ -4,8 +4,10 @@ import pytest
 from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
-from core.utils import str_to_geopoint
+from core.utils import str_to_geopoint, geocode
+from trips.serializers import LocationSerializer
 
 MAX_LONGITUDE = 90.0
 MAX_LATITUDE = 180.0
@@ -30,13 +32,15 @@ list_create_trips_url = reverse("trips-list")
 def test_incorrect_coords(admin_client, incorrect_coords, trip_data):
     """ Verify that Trip can't be created having incorrect coordinate """
     longitude, latitude, incorrect_arg = incorrect_coords
-    start_point = f"{longitude}, {latitude}"
-    trip_data["start_point"] = start_point
-    resp = admin_client.post(list_create_trips_url, trip_data)
+    start_point = f"POINT({latitude} {longitude})"
+    trip_data["start_point"]["point"] = start_point
+    resp = admin_client.post(
+        list_create_trips_url, trip_data, content_type="application/json"
+    )
     assert resp.status_code == 400
     assert (
         f"{incorrect_arg} coordinates should be in range "
-        in resp.json()["start_point"][0]
+        in resp.json()["start_point"]["point"][0]
     )
 
 
@@ -54,9 +58,47 @@ def test_invalid_dep_time(admin_client, trip_data):
     ["23.5 23.5", "[23.5 23.5]", "[23.5, 23.5]", "(23.5, 23.5)", "23.5, 23.5"],
 )
 def test_convert_to_geopoint(str_coord):
-    """ Verify 'str_to_geopoint' function that is responsible for serializing incoming
-        string coordinates to django.contrib.gis.geos.Point objects"""
+    """ Verify 'str_to_geopoint' function that is responsible for serializing
+    incoming string coordinates to django.contrib.gis.geos.Point objects. """
     point = str_to_geopoint(str_coord)
     assert point == Point(23.5, 23.5, srid=4326)
     assert point.x == 23.5
     assert point.y == 23.5
+
+
+@pytest.mark.parametrize(
+    "address",
+    [
+        "Минск Советская",
+        "Гродно Советская",
+        "Могилёв Советская",
+        "Витебск Советская",
+        "Гомель Советская",
+        "Брест Советская",
+    ],
+)
+def test_geocode(address):
+    """ Verify 'geocode_or_raise_validation_error' can geocode address. """
+    point = geocode(address)
+    assert point
+
+
+@pytest.mark.parametrize(
+    "invalid_address", ["absolute_fake", "asd12fe34", "123123123123123324"]
+)
+def test_invalid_geocode(invalid_address):
+    """ Verify that 'geocode_or_raise_validation_error' function
+        raises Validation error for invalid address. """
+    with pytest.raises(ValidationError) as exc:
+        geocode(invalid_address)
+    assert f"We can't geocode address: {invalid_address}" in str(exc.value)
+
+
+def test_empty_location():
+    """ Verify that error is raised when
+        nor address or geo coords are provided. """
+    data = {}
+    serializer = LocationSerializer(data=data)
+    with pytest.raises(ValidationError) as exc:
+        serializer.is_valid(raise_exception=True)
+    assert "Specify either address or geo coords" in str(exc.value)

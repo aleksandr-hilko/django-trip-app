@@ -1,30 +1,69 @@
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
+from rest_framework_gis import fields as geofields
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
-from core.utils import str_to_geopoint
-from trips.models import Trip, TripRequest
+from core.utils import geocode, validate_geo_point
+from trips.models import Trip, TripRequest, Location
 
 
-class GeoField(serializers.CharField):
-    """
-    Geo objects to string and vice versa
-    """
+class LocationSerializer(GeoFeatureModelSerializer):
+    """ A class to serialize locations as GeoJSON compatible data """
 
-    def to_representation(self, value):
-        """ Convert Point object to string.
-            E.g. Point(23.4, 23.5) -> '[23.4 23.5]'. """
-        return f"{value.x} {value.y}"
+    point = geofields.GeometryField(required=False)
 
-    def to_internal_value(self, data):
-        """ Convert string coordinates in Point object.
-            E.g. '23.4 23.5'-> Point(23.4, 23.5). """
-        return str_to_geopoint(data)
+    def validate_point(self, value):
+        """ Point field validation. """
+        validate_geo_point(value.x, value.y)
+        return value
+
+    def validate(self, attrs):
+        """ Object level validation.
+
+            First verify that at least one location attribute is provided,
+            if no geo coordinate is provided, verify that address can be
+            geocoded.
+            """
+        if not any(value for value in attrs.values()):
+            raise ValidationError("Specify either address or geo coords")
+        if not attrs.get("point"):
+            address = attrs["address"]
+            geocode(address)
+        return attrs
+
+    def create(self, validated_data):
+        """ Override of the base create method.
+
+            If no geo coordinate is provided, geocode the address and save
+            the model, otherwise just call base create() to save the model.
+            """
+        if not validated_data.get("point"):
+            address = validated_data["address"]
+            validated_data["point"] = geocode(address)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        """ Override of the base update method.
+
+            If no geo coordinate is provided, geocode the address and save
+            the model, otherwise just call base update() to update the model.
+            """
+        if not validated_data.get("point"):
+            address = validated_data["address"]
+            validated_data["point"] = geocode(address)
+        return super().update(instance, validated_data)
+
+    class Meta:
+        model = Location
+        geo_field = "point"
+        fields = ("id", "address", "point")
 
 
 class TripSerializer(ModelSerializer):
-    dest_point = GeoField(required=True, max_length=100)
-    start_point = GeoField(required=True, max_length=100)
+    dest_point = LocationSerializer()
+    start_point = LocationSerializer()
     driver = serializers.StringRelatedField(read_only=True)
     passengers = serializers.StringRelatedField(read_only=True, many=True)
     dist1 = serializers.CharField(required=False, read_only=True)
@@ -51,16 +90,55 @@ class TripSerializer(ModelSerializer):
         ]
         extra_kwargs = {"num_seats": {"write_only": True}}
 
+    def create(self, validated_data):
+        """ Overwrite the base create method in order to explicitly
+            handle nested serializers relationships.
+            """
+        start_point_data, dest_point_data = (
+            validated_data.get("start_point"),
+            validated_data.get("dest_point"),
+        )
+
+        validated_data["start_point"] = LocationSerializer().create(
+            validated_data=start_point_data
+        )
+        validated_data["dest_point"] = LocationSerializer().create(
+            validated_data=dest_point_data
+        )
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        """ Overwrite the base update method in order to explicitly
+            handle nested serializers relationships.
+            """
+        start_point_data, dest_point_data = (
+            validated_data.get("start_point"),
+            validated_data.get("dest_point"),
+        )
+
+        if start_point_data:
+            validated_data["start_point"] = LocationSerializer().update(
+                instance=instance.start_point, validated_data=start_point_data
+            )
+
+        if dest_point_data:
+            validated_data["dest_point"] = LocationSerializer().update(
+                instance=instance.dest_point, validated_data=dest_point_data
+            )
+
+        return super().update(instance=instance, validated_data=validated_data)
+
     def get_free_seats(self, obj):
         return obj.free_seats
 
     def validate_dep_time(self, value):
         """
-        Check that the departure time is in the future
+        Check that the departure time is in the future.
         """
         if value < timezone.now():
             raise serializers.ValidationError(
-                "Departure time has expired. Please correct the time"
+                "Departure time has expired. Please correct the time."
             )
         return value
 

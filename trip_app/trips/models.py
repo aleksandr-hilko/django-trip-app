@@ -3,6 +3,11 @@ from django.contrib.gis.db import models as geo_models
 from django.db import models
 
 
+class Location(models.Model):
+    address = models.CharField(max_length=150, blank=True)
+    point = geo_models.PointField()
+
+
 class Trip(models.Model):
     driver = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -13,9 +18,19 @@ class Trip(models.Model):
         settings.AUTH_USER_MODEL, related_name="booked_trips"
     )
     dep_time = models.DateTimeField()
-    start_point = geo_models.PointField()
-    dest_point = geo_models.PointField()
     price = models.DecimalField(max_digits=6, decimal_places=2)
+    start_point = models.ForeignKey(
+        Location,
+        related_name="start_point_of",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+    dest_point = models.ForeignKey(
+        Location,
+        related_name="dest_point_of",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
     num_seats = models.PositiveIntegerField()
     man_approve = models.BooleanField(default=True)
     description = models.TextField(blank=True)
