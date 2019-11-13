@@ -217,9 +217,8 @@ class TestTrips:
         resp = admin_client.post(url)
         assert resp.status_code == 200
         resp_dict = resp.json()
-        assert resp_dict["passengers"]
-        assert len(resp_dict["passengers"]) == 1
-        assert "admin" in resp_dict["passengers"]
+        assert resp_dict["status"] == "Approved"
+        assert "admin" == trip.passengers.first().username
 
     def test_driver_reserve(self, admin_client):
         """ Verify that driver of a trip gets 400 response to
@@ -249,7 +248,7 @@ class TestTrips:
         trip = TripFactory(man_approve=True)
         reserve_trip_url = reverse("trips-reserve", args=[trip.id])
         resp = admin_client.post(reserve_trip_url)
-        assert resp.status_code == 201
+        assert resp.status_code == 200
         trip_url = reverse("trips-detail", args=[trip.id])
         resp = admin_client.get(trip_url)
         assert resp.status_code == 200

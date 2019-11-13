@@ -88,28 +88,14 @@ class TripViewSet(ModelViewSet):
                 data="Driver can't be a passenger at the same time",
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if user.requests.filter(trip_id=trip.id).exists():
+        if user.requests.filter(trip_id=pk).exists():
             return Response(
                 data="You have already requested this trip",
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if trip.free_seats:
-            if trip.man_approve:
-                trip_request = TripRequest.objects.create(trip=trip, user=user)
-                serializer = TripRequestSerializer(trip_request)
-                return Response(
-                    serializer.data, status=status.HTTP_201_CREATED
-                )
-            TripRequest.objects.create(
-                trip=trip, user=user, status=TripRequest.APPROVED
-            )
-            trip.passengers.add(user)
-            serializer = self.get_serializer(trip)
-            return Response(serializer.data)
-        return Response(
-            data="There are no empty seats in this trip",
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        trip_request = trip.process_request(user)
+        serializer = TripRequestSerializer(trip_request)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
     def requests(self, *args, **kwargs):
@@ -149,13 +135,9 @@ class TripRequestViewSet(
         """ Approve trip request via
             POST api/trip-requests/<id>/approve/. """
         trip_request = self.get_object()
-        if trip_request.trip.free_seats:
-            trip_request.approve()
-            serializer = TripRequestSerializer(trip_request)
-            return Response(data=serializer.data)
-        return Response(
-            "You haven't got free seats", status=status.HTTP_400_BAD_REQUEST
-        )
+        trip_request.approve()
+        serializer = TripRequestSerializer(trip_request)
+        return Response(data=serializer.data)
 
     @action(detail=True, methods=["post"])
     def decline(self, *args, **kwargs):

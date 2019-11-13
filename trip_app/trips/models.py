@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.gis.db import models as geo_models
 from django.db import models
+from rest_framework.exceptions import ValidationError
 
 
 class Location(models.Model):
@@ -45,6 +46,24 @@ class Trip(models.Model):
         """ String representation of trip passengers. """
         return ",".join([str(p) for p in self.passengers.all()])
 
+    def process_request(self, user):
+        """ Create a trip request with active status if trip requires manual
+            approve, otherwise set approved status and add user to passenger's
+            list.
+
+            :raises: ValidationError when trip doesn't have free seats. """
+        if self.free_seats:
+            trip_request = TripRequest(
+                trip=self, user=user, status=TripRequest.ACTIVE
+            )
+            if self.man_approve:
+                trip_request.save()
+            else:
+                trip_request.approve()
+            return trip_request
+        else:
+            raise ValidationError("There are no empty seats in this trip")
+
 
 class TripRequest(models.Model):
     ACTIVE = 1
@@ -70,11 +89,16 @@ class TripRequest(models.Model):
 
     def approve(self):
         """ Set "Approved" status in DB
-            and add user to trip's passenger list. """
-        self.status = TripRequest.APPROVED
-        self.save()
-        self.trip.passengers.add(self.user)
-        self.trip.save()
+            and add user to trip's passenger list.
+
+            :raises: ValidationError when trip doesn't have free seats. """
+        if self.trip.free_seats:
+            self.status = TripRequest.APPROVED
+            self.save()
+            self.trip.passengers.add(self.user)
+            self.trip.save()
+        else:
+            raise ValidationError("There are no empty seats in this trip")
 
     def decline(self):
         """ Set "Declined" status for a model in DB
