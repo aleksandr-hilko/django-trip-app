@@ -1,11 +1,9 @@
-from accounts.permissions import IsAuthOwnerOrAdminOnly
-from django.contrib.auth import get_user_model
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAdminUser
 
+from accounts.permissions import IsAuthOwnerOrAdminOnly
+from core.constants import User
 from .serializers import UserSerializer
-
-User = get_user_model()
 
 
 class UserCreate(CreateAPIView):

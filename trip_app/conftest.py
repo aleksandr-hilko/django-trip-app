@@ -1,9 +1,7 @@
 import pytest
-from django.contrib.auth import get_user_model
 
-from accounts.tests.user_factory import faker
-
-User = get_user_model()
+from accounts.tests.user_factory import faker, UserFactory
+from core.constants import User
 
 
 @pytest.fixture()
@@ -29,3 +27,9 @@ def create_user(signup_data, client):
     password = signup_data.get("password")
     user = User.objects.create_user(**signup_data)
     return user.id, user.username, password
+
+
+@pytest.fixture
+def user():
+    """ Create User model in DB. """
+    return UserFactory()

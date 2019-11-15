@@ -1,10 +1,8 @@
 import pytest
-from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 
+from core.constants import User
 from . import user_factory
-
-User = get_user_model()
 
 
 @pytest.mark.django_db(transaction=True)
