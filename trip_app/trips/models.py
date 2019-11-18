@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.gis.db import models as geo_models
 from django.db import models
+from django.db.models.signals import m2m_changed, pre_save
+from django.dispatch import receiver
 from rest_framework.exceptions import ValidationError
 
 
@@ -52,17 +54,14 @@ class Trip(models.Model):
             list.
 
             :raises: ValidationError when trip doesn't have free seats. """
-        if self.free_seats:
-            trip_request = TripRequest(
-                trip=self, user=user, status=TripRequest.ACTIVE
-            )
-            if self.man_approve:
-                trip_request.save()
-            else:
-                trip_request.approve()
-            return trip_request
+        trip_request = TripRequest(
+            trip=self, user=user, status=TripRequest.ACTIVE
+        )
+        if self.man_approve:
+            trip_request.save()
         else:
-            raise ValidationError("There are no empty seats in this trip")
+            trip_request.approve()
+        return trip_request
 
 
 class TripRequest(models.Model):
@@ -92,13 +91,10 @@ class TripRequest(models.Model):
             and add user to trip's passenger list.
 
             :raises: ValidationError when trip doesn't have free seats. """
-        if self.trip.free_seats:
-            self.status = TripRequest.APPROVED
-            self.save()
-            self.trip.passengers.add(self.user)
-            self.trip.save()
-        else:
-            raise ValidationError("There are no empty seats in this trip")
+        self.trip.passengers.add(self.user)
+        self.trip.save()
+        self.status = TripRequest.APPROVED
+        self.save()
 
     def decline(self):
         """ Set "Declined" status for a model in DB
@@ -117,3 +113,21 @@ class TripRequest(models.Model):
         if self.user in self.trip.passengers.all():
             self.trip.passengers.remove(self.user)
             self.trip.save()
+
+
+@receiver(m2m_changed, sender=Trip.passengers.through)
+def passengers_added(instance, action, **kwargs):
+    """ M2M signal which is called when some changes between trip
+        passengers relations occur. It should prevent adding passengers
+       to trips with no free seats. """
+    if action == "pre_add":
+        if not instance.free_seats:
+            raise ValidationError("There are no empty seats in this trip")
+
+
+@receiver(pre_save, sender=TripRequest)
+def save_trip_request(instance, **kwargs):
+    """ Pre-save for TripRequest model. It should prevent creating requests
+       to trips with no free seats. """
+    if not instance.trip.free_seats:
+        raise ValidationError("There are no empty seats in this trip")
