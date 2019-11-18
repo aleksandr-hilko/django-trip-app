@@ -1,7 +1,7 @@
 import pytest
 
 from accounts.tests.user_factory import faker, UserFactory
-from core.constants import User
+from core.models import User
 
 
 @pytest.fixture()

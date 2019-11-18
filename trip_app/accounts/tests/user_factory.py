@@ -1,7 +1,7 @@
 import factory
 from faker import Factory as FakerFactory
 
-from core.constants import User
+from core.models import User
 
 faker = FakerFactory.create()
 

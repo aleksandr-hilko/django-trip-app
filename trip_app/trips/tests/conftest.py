@@ -4,7 +4,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from core.constants import User
+from core.models import User
 from trips.models import TripRequest
 from trips.tests.trip_factory import TripFactory, faker, TripRequestFactory
 

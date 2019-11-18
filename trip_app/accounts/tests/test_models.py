@@ -1,7 +1,7 @@
 import pytest
 from django.db import IntegrityError
 
-from core.constants import User
+from core.models import User
 from . import user_factory
 
 

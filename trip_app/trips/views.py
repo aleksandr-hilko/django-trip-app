@@ -116,18 +116,19 @@ class TripRequestViewSet(
     queryset = TripRequest.objects.all()
     pagination_class = PageNumberPagination
     pagination_class.page_size = 5
+    permissions_dict = {
+        "approve": [IsRequestDriverOrAdmin],
+        "decline": [IsRequestDriverOrAdmin],
+        "cancel": [IsRequestUserOrAdmin],
+        "retrieve": [IsTripDriverOrAdmin | IsRequestDriverOrAdmin],
+        "list": [IsAdminUser],
+    }
 
     def get_permissions(self):
-        if self.action in ["approve", "decline"]:
-            self.permission_classes = [IsRequestDriverOrAdmin]
-        elif self.action == "cancel":
-            self.permission_classes = [IsRequestUserOrAdmin]
-        elif self.action == "retrieve":
-            self.permission_classes = [
-                IsRequestUserOrAdmin | IsRequestDriverOrAdmin
-            ]
-        elif self.action == "list":
-            self.permission_classes = [IsAdminUser]
+        """ Define permissions based on requested endpoint. """
+        self.permission_classes = TripRequestViewSet.permissions_dict[
+            self.action
+        ]
         return super().get_permissions()
 
     @action(detail=True, methods=["post"])

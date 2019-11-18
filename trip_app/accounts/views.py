@@ -2,7 +2,7 @@ from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAdminUser
 
 from accounts.permissions import IsAuthOwnerOrAdminOnly
-from core.constants import User
+from core.models import User
 from .serializers import UserSerializer
 
 
