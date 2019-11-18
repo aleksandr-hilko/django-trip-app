@@ -16,4 +16,4 @@ test: build_test
 	@docker-compose \
 		-f docker-compose.yaml \
 		-f docker-compose.test.yaml \
-		run web bash -c "pytest -vv --ds=trip_app.settings.test trip_app/"
+		run web dockerize -timeout 20s -wait tcp://db:5432 bash -c "pytest -vv --ds=trip_app.settings.test trip_app/"
