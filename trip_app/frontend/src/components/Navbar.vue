@@ -9,7 +9,7 @@
         <ul class="navbar-nav ml-auto">
           <li class="nav-item mx-1">
             <router-link
-              :to="{ name: 'search-trip' }"
+              :to="{ name: 'search-trip-form' }"
               class="btn btn-sm btn-outline-success"
               >Find
             </router-link>
