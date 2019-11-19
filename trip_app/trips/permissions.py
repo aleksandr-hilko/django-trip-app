@@ -22,3 +22,14 @@ class IsRequestUserOrAdmin(IsAuthenticated):
 
     def has_object_permission(self, request, view, obj):
         return obj.user == request.user or request.user.is_staff
+
+
+class NewPassengerNotDriver(IsAuthenticated):
+    """ Permissions to allow only a new passenger and not a driver to
+        request a trip. """
+
+    def has_object_permission(self, request, view, obj):
+        already_requested = request.user.requests.filter(
+            trip_id=obj.id
+        ).exists()
+        return not already_requested and not request.user == obj.driver

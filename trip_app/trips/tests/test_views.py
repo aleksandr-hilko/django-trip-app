@@ -208,15 +208,6 @@ class TestTrips:
         assert resp_dict["status"] == "Approved"
         assert "admin" == trip_auto_appr.passengers.first().username
 
-    def test_driver_reserve(self, client_trip):
-        """ Verify that driver of a trip gets 400 response to
-            POST /api/trips/<trip_id>/reserve/. """
-        client, trip = client_trip
-        url = reverse("trips-reserve", args=[trip.id])
-        resp = client.post(url)
-        assert resp.status_code == 400
-        assert "Driver can't be a passenger at the same time" in resp.data
-
     def test_reserve_full(self, admin_client, user):
         """ Verify that user cannot reserve a trip with no empty seats
             with POST /api/trips/<trip_id>/reserve/. """
@@ -238,17 +229,6 @@ class TestTrips:
         resp = admin_client.get(trip_url)
         assert resp.status_code == 200
         assert not resp.json()["passengers"]
-
-    def test_reserve_multiple(self, client_request_user):
-        """ Verify that when user attempts to reserve a trip for which
-            user request already exists bad response is returned. """
-        client, trip_request = client_request_user
-        reserve_trip_url = reverse(
-            "trips-reserve", args=[trip_request.trip.id]
-        )
-        resp = client.post(reserve_trip_url)
-        assert resp.status_code == 400
-        assert resp.data == "You have already requested this trip"
 
     def test_trip_requests(self, admin_client, trip_request):
         """ Verify that trip requests for a specific trip are

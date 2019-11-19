@@ -1,6 +1,6 @@
 from django.contrib.gis.db.models.functions import Distance
 from django.db.models import F
-from rest_framework import status, mixins, viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -13,6 +13,7 @@ from trips.permissions import (
     IsTripDriverOrAdmin,
     IsRequestUserOrAdmin,
     IsRequestDriverOrAdmin,
+    NewPassengerNotDriver,
 )
 from trips.serializers import TripSerializer, TripRequestSerializer
 
@@ -24,17 +25,24 @@ class TripViewSet(ModelViewSet):
     serializer_class = TripSerializer
     pagination_class = PageNumberPagination
     pagination_class.page_size = 5
+    permissions_dict = {
+        "update": [IsTripDriverOrAdmin],
+        "destroy": [IsTripDriverOrAdmin],
+        "partial_update": [IsTripDriverOrAdmin],
+        "requests": [IsTripDriverOrAdmin],
+        "list": [IsAuthenticated],
+        "retrieve": [IsAuthenticated],
+        "create": [IsAuthenticated],
+        "reserve": [NewPassengerNotDriver],
+    }
 
     def perform_create(self, serializer):
         """ Set driver for a Trip model before writing in DB. """
         serializer.save(driver=self.request.user)
 
     def get_permissions(self):
-        """ Define permissions for associated views. """
-        if self.action in ["update", "destroy", "partial_update", "requests"]:
-            self.permission_classes = [IsTripDriverOrAdmin]
-        else:
-            self.permission_classes = [IsAuthenticated]
+        """ Define permissions based on requested endpoint. """
+        self.permission_classes = TripViewSet.permissions_dict[self.action]
         return super().get_permissions()
 
     def get_queryset(self):
@@ -79,20 +87,10 @@ class TripViewSet(ModelViewSet):
         return queryset
 
     @action(detail=True, methods=["post"])
-    def reserve(self, request, pk=None):
+    def reserve(self, request, **kwargs):
         """ Reserve a trip via POST api/trips/<trip_id>/reserve/. """
         trip = self.get_object()
         user = request.user
-        if user == trip.driver:
-            return Response(
-                data="Driver can't be a passenger at the same time",
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if user.requests.filter(trip_id=pk).exists():
-            return Response(
-                data="You have already requested this trip",
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         trip_request = trip.process_request(user)
         serializer = TripRequestSerializer(trip_request)
         return Response(serializer.data)

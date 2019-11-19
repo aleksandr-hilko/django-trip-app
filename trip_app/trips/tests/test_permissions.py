@@ -74,3 +74,21 @@ class TestTripPermissions:
         resp = client.post(request_url)
         assert resp.status_code == 200
         assert resp.json()["status"] == status
+
+    def test_reserve_multiple(self, client_request_user):
+        """ Verify that user is forbidden to reserve a trip for which
+            user request already exists. """
+        client, trip_request = client_request_user
+        reserve_trip_url = reverse(
+            "trips-reserve", args=[trip_request.trip.id]
+        )
+        resp = client.post(reserve_trip_url)
+        assert resp.status_code == 403
+
+    def test_driver_reserve(self, client_trip):
+        """ Verify that driver is forbidden to reserve a trip to
+            POST /api/trips/<trip_id>/reserve/. """
+        client, trip = client_trip
+        url = reverse("trips-reserve", args=[trip.id])
+        resp = client.post(url)
+        assert resp.status_code == 403
