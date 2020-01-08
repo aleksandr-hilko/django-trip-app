@@ -1,18 +1,14 @@
 from datetime import timedelta
 
 import pytest
-from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
 
-from trips.models import TripRequest
-from trips.tests.trip_factory import TripFactory, LocationFactory
+from trips.tests.trip_factory import LocationFactory, TripFactory
 from trips.views import TripViewSet
 
 list_create_trips_url = reverse("trips-list")
-
-User = get_user_model()
 
 
 @pytest.fixture
@@ -50,6 +46,7 @@ def trips_with_different_coordinates():
     lissabon_point = LocationFactory(
         point=Point(38.719013, -9.224802, srid=4326)
     )
+
     minsk_grodno = TripFactory(
         start_point=minsk_point, dest_point=grodno_point
     )
@@ -96,6 +93,7 @@ class TestTrips:
             == trip_data["dest_point"]["point"]
         )
         assert float(trip_dict["price"]) == trip_data["price"]
+
         assert trip_dict["free_seats"] == trip_data["num_seats"]
         assert trip_dict["description"] == trip_data["description"]
 
@@ -159,10 +157,9 @@ class TestTrips:
         assert resp_dict["count"] == 1
         assert resp_dict["results"][0]["id"] == in_time_trip.id
 
-    def test_get_trip(self, admin_client):
+    def test_get_trip(self, admin_client, trip):
         """ Verify that correct trip data can be accessed via
             GET /api/trips/<trip_id>/. """
-        trip = TripFactory()
         url = reverse("trips-detail", args=[trip.id])
         resp = admin_client.get(url)
         assert resp.status_code == 200
@@ -172,9 +169,8 @@ class TestTrips:
         assert resp_dict["free_seats"] == trip.num_seats
         assert resp_dict["description"] == trip.description
 
-    def test_update_trip(self, admin_client, trip_data):
+    def test_update_trip(self, admin_client, trip, trip_data):
         """ Verify that trip can be updated via PUT /api/trips/<trip_id>/. """
-        trip = TripFactory()
         url = reverse("trips-detail", args=[trip.id])
         resp = admin_client.put(
             url, trip_data, content_type="application/json"
@@ -193,42 +189,28 @@ class TestTrips:
         assert resp_dict["free_seats"] == trip_data["num_seats"]
         assert resp_dict["description"] == trip_data["description"]
 
-    def test_delete_trip(self, admin_client):
+    def test_delete_trip(self, trip, admin_client):
         """Verify that trip can be deleted via DELETE /api/trips/<trip_id>/."""
-        trip = TripFactory()
         url = reverse("trips-detail", args=[trip.id])
         resp = admin_client.delete(url)
         assert resp.status_code == 204
         resp = admin_client.get(url)
         assert resp.status_code == 404
 
-    def test_reserve(self, admin_client):
+    def test_reserve(self, admin_client, trip_auto_appr):
         """ Verify that user is able to reserve a trip with POST
             /api/trips/<trip_id>/reserve/ and his name should appear in the
             list of passengers if man_approve field of a trip is False. """
-        trip = TripFactory(man_approve=False)
-        url = reverse("trips-reserve", args=[trip.id])
+        url = reverse("trips-reserve", args=[trip_auto_appr.id])
         resp = admin_client.post(url)
         assert resp.status_code == 200
         resp_dict = resp.json()
-        assert resp_dict["passengers"]
-        assert len(resp_dict["passengers"]) == 1
-        assert "admin" in resp_dict["passengers"]
+        assert resp_dict["status"] == "Approved"
+        assert "admin" == trip_auto_appr.passengers.first().username
 
-    def test_driver_reserve(self, admin_client):
-        """ Verify that driver of a trip gets 400 response to
-            POST /api/trips/<trip_id>/reserve/. """
-        client_user = User.objects.get(username="admin")
-        trip = TripFactory(driver=client_user)
-        url = reverse("trips-reserve", args=[trip.id])
-        resp = admin_client.post(url)
-        assert resp.status_code == 400
-        assert "Driver can't be a passenger at the same time" in resp.data
-
-    def test_reserve_full(self, admin_client):
+    def test_reserve_full(self, admin_client, user):
         """ Verify that user cannot reserve a trip with no empty seats
             with POST /api/trips/<trip_id>/reserve/. """
-        user = User.objects.create(username="test")
         # Trip with 1 seat and 1 passenger within it
         trip = TripFactory(num_seats=1, passengers=[user])
         url = reverse("trips-reserve", args=[trip.id])
@@ -236,30 +218,71 @@ class TestTrips:
         assert resp.status_code == 400
         assert "There are no empty seats in this trip" in resp.data
 
-    def test_reserve_trip_with_man_approve(self, admin_client):
+    def test_reserve_trip_with_man_approve(self, trip, admin_client):
         """ Verify that when user attempts to reserve a trip with manual
             approve via POST /api/trips/<trip_id>/reserve/ trip request is
             created and passenger list of a trip is still empty. """
-        trip = TripFactory(man_approve=True)
         reserve_trip_url = reverse("trips-reserve", args=[trip.id])
         resp = admin_client.post(reserve_trip_url)
-        assert resp.status_code == 201
+        assert resp.status_code == 200
         trip_url = reverse("trips-detail", args=[trip.id])
         resp = admin_client.get(trip_url)
         assert resp.status_code == 200
         assert not resp.json()["passengers"]
 
-    def test_trip_requests(self, admin_client):
+    def test_trip_requests(self, admin_client, trip_request):
         """ Verify that trip requests for a specific trip are
-            returned for GET /api/trips/<trip_id>/resuests/. """
-        client_user = User.objects.get(username="admin")
-        trip = TripFactory()
-        trip_request = TripRequest.objects.create(trip=trip, user=client_user)
-        trip_requests_url = reverse("trips-requests", args=[trip.id])
+            returned for GET /api/trips/<trip_id>/requests/. """
+        trip_requests_url = reverse(
+            "trips-requests", args=[trip_request.trip.id]
+        )
         resp = admin_client.get(trip_requests_url)
         assert resp.status_code == 200
         resp_dict = resp.json()
         assert len(resp_dict) == 1
         assert resp_dict[0]["id"] == trip_request.id
-        assert resp_dict[0]["trip"] == trip.id
-        assert resp_dict[0]["user"] == "admin"
+        assert resp_dict[0]["trip"] == trip_request.trip.id
+        assert resp_dict[0]["user"] == trip_request.user.username
+
+    @pytest.mark.parametrize(
+        "url, status",
+        [
+            ("trip-requests-approve", "Approved"),
+            ("trip-requests-decline", "Declined"),
+        ],
+    )
+    def test_request_approve_decline(
+        self, admin_client, url, status, trip_request
+    ):
+        """ Verify that trip requests can be approved(declined) with
+            POST /api/trip-requests/<id>/approve(decline)/. """
+        decline_request_url = reverse(url, args=[trip_request.id])
+        resp = admin_client.post(decline_request_url)
+        assert resp.status_code == 200
+        resp_dict = resp.json()
+        assert resp_dict["id"] == trip_request.id
+        assert resp_dict["status"] == status
+
+    def test_cancel(self, client_request_user):
+        """  Verify that user can cancel trip request which is active with
+             POST api/trips-requests/<id>/cancel/. """
+        client, trip_request = client_request_user
+        cancel_reservation_url = reverse(
+            "trip-requests-cancel", args=[trip_request.id]
+        )
+        resp = client.post(cancel_reservation_url)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "Inactive"
+
+    def test_cancel_user_removed(self, client_request_user):
+        """  Verify that user can cancel trip request which is approved with
+            POST api/trip-requests/<id>/cancel/. """
+        client, trip_request = client_request_user
+        trip_request.approve()
+        cancel_reservation_url = reverse(
+            "trip-requests-cancel", args=[trip_request.id]
+        )
+        resp = client.post(cancel_reservation_url)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "Inactive"
+        assert trip_request.user not in trip_request.trip.passengers.all()

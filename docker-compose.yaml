@@ -5,19 +5,12 @@ services:
     image: kartoza/postgis:11.0-2.5
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: $DB_USER
-      POSTGRES_PASSWORD: $DB_PASS
-      POSTGRES_DB: $DB_NAME
+    env_file:
+      - test_vars.env
   web:
     build: .
-    environment:
-      DJANGO_SETTINGS_MODULE: 'trip_app.settings.production'
-      DB_USER: $DB_USER
-      DB_PASS: $DB_PASS
-      DB_NAME: $DB_NAME
-      OPENSTREET_KEY: $OPENSTREET_KEY
-      TRIP_APP_SECRET: $TRIP_APP_SECRET
+    env_file:
+      - test_vars.env
     command: dockerize -wait tcp://db:5432 python trip_app/manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"

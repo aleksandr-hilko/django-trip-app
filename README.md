@@ -22,8 +22,7 @@ App that allow customers to collaborate being moved around the city by either cr
 
 * `make test` - this will build a test Docker image and run the tests automatically.
 
-6. Run `docker-compose -f docker-compose.yaml -f docker-compose.setup.yaml up` if you have
-   you have dependencies updated / model migrations changed, otherwise run `docker-compose up'
+6. Run `docker-compose up` 
 
     You can check that your server is now working in a browser:
         `http://127.0.0.1:8000/api/accounts/`

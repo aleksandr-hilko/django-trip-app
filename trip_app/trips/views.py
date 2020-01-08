@@ -1,34 +1,53 @@
 from django.contrib.gis.db.models.functions import Distance
 from django.db.models import F
-from rest_framework import status
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from core.utils import str_to_geopoint, geocode
 from trips.models import Trip, TripRequest
-from trips.permissions import IsTripDriverOrAdmin
+from trips.permissions import (
+    IsTripDriverOrAdmin,
+    IsRequestUserOrAdmin,
+    IsRequestDriverOrAdmin,
+    NewPassengerNotDriver,
+)
 from trips.serializers import TripSerializer, TripRequestSerializer
 
 
 class TripViewSet(ModelViewSet):
+    """ Provide default CRUD actions with custom 'reserve' and 'requests'
+        actions. """
+
     serializer_class = TripSerializer
     pagination_class = PageNumberPagination
     pagination_class.page_size = 5
+    permissions_dict = {
+        "update": [IsTripDriverOrAdmin],
+        "destroy": [IsTripDriverOrAdmin],
+        "partial_update": [IsTripDriverOrAdmin],
+        "requests": [IsTripDriverOrAdmin],
+        "list": [IsAuthenticated],
+        "retrieve": [IsAuthenticated],
+        "create": [IsAuthenticated],
+        "reserve": [NewPassengerNotDriver],
+    }
 
     def perform_create(self, serializer):
+        """ Set driver for a Trip model before writing in DB. """
         serializer.save(driver=self.request.user)
 
     def get_permissions(self):
-        if self.action in ["update", "destroy", "partial_update"]:
-            self.permission_classes = [IsTripDriverOrAdmin]
-        else:
-            self.permission_classes = [IsAuthenticated]
+        """ Define permissions based on requested endpoint. """
+        self.permission_classes = TripViewSet.permissions_dict[self.action]
         return super().get_permissions()
 
     def get_queryset(self):
+        """ Get the list of trips for this viewset
+            and filter it depending on request query parameters. """
         queryset = Trip.objects.all()
         query_params = self.request.query_params
 
@@ -68,36 +87,71 @@ class TripViewSet(ModelViewSet):
         return queryset
 
     @action(detail=True, methods=["post"])
-    def reserve(self, request, pk=None):
-        """ Reserve a trip by sending a POST to api/trip/<trip_id>/reserve/."""
+    def reserve(self, request, **kwargs):
+        """ Reserve a trip via POST api/trips/<trip_id>/reserve/. """
         trip = self.get_object()
         user = request.user
-        if user == trip.driver:
-            return Response(
-                data="Driver can't be a passenger at the same time",
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if trip.free_seats:
-            if trip.man_approve:
-                trip_request = TripRequest.objects.create(trip=trip, user=user)
-                serializer = TripRequestSerializer(trip_request)
-                return Response(
-                    serializer.data, status=status.HTTP_201_CREATED
-                )
-            trip.passengers.add(user)
-            serializer = self.get_serializer(trip)
-            return Response(serializer.data)
-        return Response(
-            data="There are no empty seats in this trip",
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        trip_request = trip.process_request(user)
+        serializer = TripRequestSerializer(trip_request)
+        return Response(serializer.data)
 
-    @action(
-        detail=True, methods=["get"], permission_classes=[IsTripDriverOrAdmin]
-    )
+    @action(detail=True, methods=["get"])
     def requests(self, *args, **kwargs):
         """ The list of the requests related to the specific trip.
             GET /api/trips/<trip_id>/requests/. """
         trip = self.get_object()
         serializer = TripRequestSerializer(trip.requests, many=True)
+        return Response(serializer.data)
+
+
+class TripRequestViewSet(
+    mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+):
+    """ Provide listing or retrieving trip requests,
+        with the approve/decline/cancel trip request custom actions. """
+
+    serializer_class = TripRequestSerializer
+    queryset = TripRequest.objects.all()
+    pagination_class = PageNumberPagination
+    pagination_class.page_size = 5
+    permissions_dict = {
+        "approve": [IsRequestDriverOrAdmin],
+        "decline": [IsRequestDriverOrAdmin],
+        "cancel": [IsRequestUserOrAdmin],
+        "retrieve": [IsTripDriverOrAdmin | IsRequestDriverOrAdmin],
+        "list": [IsAdminUser],
+    }
+
+    def get_permissions(self):
+        """ Define permissions based on requested endpoint. """
+        self.permission_classes = TripRequestViewSet.permissions_dict[
+            self.action
+        ]
+        return super().get_permissions()
+
+    @action(detail=True, methods=["post"])
+    def approve(self, *args, **kwargs):
+        """ Approve trip request via
+            POST api/trip-requests/<id>/approve/. """
+        trip_request = self.get_object()
+        trip_request.approve()
+        serializer = TripRequestSerializer(trip_request)
+        return Response(data=serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def decline(self, *args, **kwargs):
+        """ Approve trip request via
+            POST api/trip-requests/<id>/decline/. """
+        trip_request = self.get_object()
+        trip_request.decline()
+        serializer = self.serializer_class(trip_request)
+        return Response(data=serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, *args, **kwargs):
+        """ Cancel reservation for a trip by sending a
+            POST to api/trip_requests/<id>/cancel/. """
+        trip_request = self.get_object()
+        trip_request.cancel()
+        serializer = self.serializer_class(trip_request)
         return Response(serializer.data)
