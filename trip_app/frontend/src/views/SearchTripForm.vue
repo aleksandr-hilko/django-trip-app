@@ -1,80 +1,113 @@
 <template>
-    <div class="search-trip">
+  <div class="search-trip">
+    <h3 class="form-header">
+      Where do you want to go ?
+    </h3>
+    <div class="container mb-2 w-25">
+      <b-form @submit="onSubmit">
+        <b-form-group>
+          <vue-bootstrap-typeahead
+            v-model="form.from"
+            :data="addresses_from"
+            placeholder="From"
+            @hit="form.from = $event"
+          />
+          <small
+            v-if="errors.from"
+            class="text-danger"
+          >
+            {{ errors.from }}
+          </small>
+        </b-form-group>
+        <b-form-group>
+          <vue-bootstrap-typeahead
+            v-model="form.to"
+            :data="addresses_to"
+            placeholder="To"
+            @hit="form.to = $event"
+          />
+          <small
+            v-if="errors.to"
+            class="text-danger"
+          >
+            {{ errors.to }}
+          </small>
+        </b-form-group>
         <h3 class="form-header">
-            Where do you want to go ?
+          When do you want to go ?
         </h3>
-        <div class="container mb-2 w-25">
-            <b-form @submit="onSubmit">
-                <b-form-group>
-                    <vue-bootstrap-typeahead
-                            v-model="form.from"
-                            :data="addresses_from"
-                            placeholder="From"
-                            @hit="form.from = $event"
-                    />
-                    <small
-                            v-if="errors.from"
-                            class="text-danger"
-                    >
-                        {{ errors.from }}
-                    </small>
-                </b-form-group>
-                <b-form-group>
-                    <vue-bootstrap-typeahead
-                            v-model="form.to"
-                            :data="addresses_to"
-                            placeholder="To"
-                            @hit="form.to = $event"
-                    />
-                    <small
-                            v-if="errors.to"
-                            class="text-danger"
-                    >
-                        {{ errors.to }}
-                    </small>
-                </b-form-group>
-                <br>
-                <b-form-row>
-                    <b-form-group class="form-group">
-                        <datepicker
-                                :bootstrap-styling="true"
-                                placeholder="Date"
-                                input-class="bg-light"
-                                :disabled-dates="disabledDates"
-                                @selected="form.date = $event"
-                        />
-                        <small
-                                v-if="errors.date"
-                                class="text-danger"
-                        >
-                            {{ errors.date }}
-                        </small>
-                    </b-form-group>
-                    <b-form-group class="form-group col-md-6">
-                        <b-form-input
-                                :id="'type-time'"
-                                v-model="form.time"
-                                :type="'time'"
-                                placeholder="Time"
-                        />
-                        <small
-                                v-if="errors.time"
-                                class="text-danger"
-                        >
-                            {{ errors.time }}
-                        </small>
-                    </b-form-group>
-                </b-form-row>
-
-                <button
-                        type="submit"
-                        class="btn btn-primary"
-                >
-                    Find
-                </button>
-            </b-form>
-        </div>
+        <b-form-row>
+          <b-form-group class="form-group">
+            <datepicker
+              :bootstrap-styling="true"
+              placeholder="Date 1"
+              input-class="bg-light"
+              :disabled-dates="disabledDates"
+              @selected="form.date1 = $event"
+            />
+            <small
+              v-if="errors.date1"
+              class="text-danger"
+            >
+              {{ errors.date1 }}
+            </small>
+          </b-form-group>
+          <b-form-group class="form-group col-md-6">
+            <b-form-input
+              :id="'type-time'"
+              v-model="form.time1"
+              :type="'time'"
+              placeholder="Time1"
+            />
+            <small
+              v-if="errors.time1"
+              class="text-danger"
+            >
+              {{ errors.time1 }}
+            </small>
+          </b-form-group>
+        </b-form-row>
+        <b-form-row>
+          <b-form-group class="form-group">
+            <datepicker
+              :bootstrap-styling="true"
+              placeholder="Date 2"
+              input-class="bg-light"
+              :disabled-dates="disabledDates"
+              @selected="form.date2 = $event"
+            />
+            <small
+              v-if="errors.date2"
+              class="text-danger"
+            >
+              {{ errors.date2 }}
+            </small>
+          </b-form-group>
+          <b-form-group class="form-group col-md-6">
+            <b-form-input
+              :id="'type-time'"
+              v-model="form.time2"
+              :type="'time'"
+              placeholder="Time2"
+            />
+            <small
+              v-if="errors.time2"
+              class="text-danger"
+            >
+              {{ errors.time2 }}
+            </small>
+          </b-form-group>
+        </b-form-row>
+        <br>
+        <button
+          type="submit"
+          class="btn btn-primary"
+        >
+          Find
+        </button>
+      </b-form>
     </div>
+  </div>
 </template>
 
 <script>
@@ -83,6 +116,7 @@
     import Datepicker from "vuejs-datepicker";
     import _ from "underscore";
     import {BForm, BFormGroup, BFormInput, BFormRow} from "bootstrap-vue";
+    import dateformat from "dateformat";
 
 
     export default {
@@ -111,28 +145,22 @@
                     }
                 },
                 form: {
-                    time: "",
-                    date: "",
+                    time1: "",
+                    date1: "",
+                    time2: "",
+                    date2: "",
                     from: "",
                     to: ""
                 },
                 errors: {
-                    time: "",
-                    date: "",
+                    time1: "",
+                    date1: "",
+                    time2: "",
+                    date2: "",
                     from: "",
                     to: ""
                 }
             };
-        },
-        computed: {
-            formDateTime: function () {
-                let [hours, minutes] = [0, 0];
-                if (this.form.time) {
-                    [hours, minutes] = this.form.time.split(":");
-                }
-                let form_date = new Date(this.form.date)
-                return new Date(form_date.setHours(hours, minutes));
-            }
         },
         watch: {
             'form.from': _.debounce(function (addr) {
@@ -143,26 +171,42 @@
             }, 500)
         },
         methods: {
+            _formDateTime(dateKey, timeKey) {
+                let formDate = this.form[dateKey];
+                let formTime = this.form[timeKey];
+                let [hours, minutes] = [0, 0];
+                if (formTime) {
+                    [hours, minutes] = formTime.split(":");
+                }
+                else {
+                    var today = new Date();
+                    today.setMinutes(today.getMinutes() + 30);
+                    [hours, minutes] = [today.getHours(), today.getMinutes()];
+                }
+                let form_date = new Date(formDate);
+                return new Date(form_date.setHours(hours, minutes));
+            },
             _isFormFieldEmpty() {
                 let isEmpty = false;
                 for (let field in this.form) {
-                    if (!this.form[field]) {
+                    // allow time only fields to be empty
+                    if (!this.form[field] && field !== 'time1' && field !== 'time2') {
                         isEmpty = true;
-                        this.errors[field] = `Please fill the ${field} field `;
+                        this.errors[field] = `Please fill this field `;
                     } else {
                         this.errors[field] = ""
                     }
                 }
                 return isEmpty
             },
-            _isValidTime() {
+            _isValidTime(dateKey, timeKey) {
                 let isValid = true;
                 let cur_date = new Date();
-                if (cur_date > this.formDateTime) {
+                if (cur_date > this._formDateTime(dateKey, timeKey)) {
                     isValid = false;
-                    this.errors.time = "Time have passed. Please change it. ";
+                    this.errors[timeKey] = "Time have passed. Please change it. ";
                 } else {
-                    this.errors.time = "";
+                    this.errors[timeKey] = "";
                 }
                 return isValid;
             },
@@ -171,70 +215,41 @@
                 let isGeoCoded = true;
                 let query = this.form[key];
                 let endpoint = `/api/geocode/?query=${query}`;
-                apiService(endpoint).then(data => {
-                    if (data.length !== 0) {
-                        this.errors[key] = ""
-                    } else {
-                        isGeoCoded = false;
-                        if (!this.errors[key]) {
-                            this.errors[key] = "We can't detect this address";
-                        }
+                let geoData = apiService(endpoint);
+                isGeoCoded = true;
+                if (geoData.length !== 0) {
+                    this.errors[key] = "";
+                } else {
+                    if (!this.errors[key]) {
+                        this.errors[key] = "We can't detect this address";
                     }
-                    return isGeoCoded
-                })
+                    isGeoCoded = false;
+                }
+                return isGeoCoded
             },
             isValidForm() {
-                return !this._isFormFieldEmpty() &
-                    this._isValidTime() &
-                    this._isGeoCoded("from") &
-                    this._isGeoCoded("to");
+                return !this._isFormFieldEmpty() && this._isValidTime('date1', 'time1') && this._isValidTime('date2', 'time2') && this._isGeoCoded("from") && this._isGeoCoded("to")
             },
 
-            onSubmit(evt) {
+            async onSubmit(evt) {
                 evt.preventDefault();
-                if (!this.isValidForm()) {
-                    return
-                } else {
-                    let endpoint = `/api/trips/?addr1=${this.form.from}&addr2=${this.form.to}&time1=${this.formDateTime()}&time2=${this.formDateTime()}`;
+                let isValid = await this.isValidForm();
+                if (isValid) {
+                    let endpoint = `/api/trips/?addr1=${this.form.from}&addr2=${this.form.to}&time1=${dateformat(this._formDateTime('date1', 'time1'), "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'")}&time2=${dateformat(this._formDateTime('date2', 'time2'), "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'")}`;
                     console.log(endpoint);
-                    apiService(endpoint)
-                        .then(searchList => {
-                            this.$router.push({
-                                name: 'search-list',
-                                query: {
-                                    addr1: this.form.from,
-                                    addr2: this.form.from,
-                                    time1: this.form.from,
-                                    time2: this.form.from,
-                                },
-                                params: {searchList: searchList}
-                            })
-                        })
+                    let trips = await apiService(endpoint);
+                    await this.$router.push({
+                        name: 'search-list',
+                        query: {
+                            addr1: this.form.from,
+                            addr2: this.form.from,
+                            time1: this.form.from,
+                            time2: this.form.from,
+                        },
+                        params: {trips: trips.results}
+                    })
                 }
             },
-            //   onSubmit() {
-            //     // Tell the REST API to create or update a Question Instance
-            //     if (!this.question_body) {
-            //       this.error = "You can't send an empty question!";
-            //     } else if (this.question_body.length > 240) {
-            //       this.error = "Ensure this field has no more than 240 characters!";
-            //     } else {
-            //       let endpoint = "/api/questions/";
-            //       let method = "POST";
-            //       if (this.slug !== undefined) {
-            //         endpoint += `${ this.slug }/`;
-            //         method = "PUT";
-            //       }
-            //       apiService(endpoint, method, { content: this.question_body })
-            //         .then(question_data => {
-            //           this.$router.push({
-            //             name: 'question',
-            //             params: { slug: question_data.slug }
-            //           })
-            //         })
-            //     }
-            //   }
-            // }
 
             async setAddressesFrom(query) {
                 let endpoint = `/api/geocode/?query=${query}`;
@@ -255,7 +270,7 @@
 
 <style>
     .form-header {
-        margin: 50px;
+        margin: 40px;
         font-weight: bold;
     }
 </style>

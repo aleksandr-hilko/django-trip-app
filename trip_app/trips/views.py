@@ -42,7 +42,9 @@ class TripViewSet(ModelViewSet):
 
     def get_permissions(self):
         """ Define permissions based on requested endpoint. """
-        self.permission_classes = TripViewSet.permissions_dict[self.action]
+        self.permission_classes = TripViewSet.permissions_dict.get(
+            self.action, [IsAuthenticated]
+        )
         return super().get_permissions()
 
     def get_queryset(self):

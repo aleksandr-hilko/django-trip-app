@@ -12,6 +12,7 @@
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.1.0",
     "core-js": "^3.3.2",
+    "dateformat": "^3.0.3",
     "underscore": "^1.9.1",
     "vue": "^2.6.10",
     "vue-bootstrap-datetimepicker": "^5.0.1",
