@@ -30,8 +30,7 @@ export default new VueRouter({
     {
       path: "/search/",
       name: "search-list",
-      component: SearchTripList,
-      props: true
+      component: SearchTripList
     }
   ]
 });
