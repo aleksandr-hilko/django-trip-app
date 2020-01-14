@@ -1,6 +1,6 @@
 <template>
   <div class="card w-50">
-    <div class="card-body">
+    <div class="card-body" @click="openDistinctTrip">
       <p class="card-text">{{data.dep_time}}</p>
       <div class="direction">
         <p class="card-text">{{data.start_point['properties']['address']}}</p>
@@ -19,6 +19,15 @@ export default {
   name: "TripCard",
   props: {
     data: {}
+  },
+  methods: {
+      openDistinctTrip() {  
+        console.log(this.data)   
+        this.$router.push({
+              name: "trip",
+              params: { id: this.data.id.toString() }
+            })
+      }
   }
 };
 </script>
