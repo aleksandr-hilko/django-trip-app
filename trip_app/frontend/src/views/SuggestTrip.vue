@@ -23,25 +23,15 @@
             <small v-if="errors.to" class="text-danger">{{ errors.to }}</small>
           </b-form-group>
         </div>
-        <div>
-          <p class="form-header">Date and time</p>
-          <b-form-row>
-            <b-form-group class="form-group">
-              <datepicker
-                :bootstrap-styling="true"
-                placeholder="Departure date"
-                input-class="bg-light"
-                :disabled-dates="disabledDates"
-                @selected="form.date = $event"
-              />
-              <small v-if="errors.date" class="text-danger">{{ errors.date }}</small>
-            </b-form-group>
-            <b-form-group class="form-group col-md-6">
-              <b-form-input :id="type-time" v-model="form.time" :type="'time'" placeholder="Time" />
-              <small v-if="errors.time" class="text-danger">{{ errors.time }}</small>
-            </b-form-group>
-          </b-form-row>
-        </div>
+
+        <b-form-group>
+          <form-date-time
+            @selectedDate="form.datetime = $event"
+            :error="this.errors.datetime"
+            :header="'Date and Time'"
+          ></form-date-time>
+        </b-form-group>
+
         <div class="otherDetails">
           <b-form-group>
             <label :for="price" class="form-header">Price</label>
@@ -85,48 +75,37 @@
 <script>
 import { apiService } from "@/common/api.service.js";
 import VueBootstrapTypeahead from "@/components/VueBootstrapTypeahead.vue";
-import Datepicker from "vuejs-datepicker";
+import FormDateTime from "@/components/DateTime.vue";
+import dateformat from "dateformat";
+
 import _ from "underscore";
 import {
   BForm,
   BFormGroup,
   BFormInput,
-  BFormRow,
   BFormCheckbox,
   BFormTextarea
 } from "bootstrap-vue";
-import dateformat from "dateformat";
 
 export default {
   name: "SuggestTripForm",
 
   components: {
-    Datepicker,
     BFormInput,
     BForm,
     BFormGroup,
-    BFormRow,
     BFormCheckbox,
     BFormTextarea,
-    VueBootstrapTypeahead
+    VueBootstrapTypeahead,
+    FormDateTime
   },
 
   data() {
     return {
       addresses_from: [],
       addresses_to: [],
-      disabledDates: {
-        customPredictor: function(date) {
-          // compare dates without time part
-          let currentDate = new Date().setHours(0, 0, 0, 0);
-          if (date.setHours(0, 0, 0, 0) < currentDate) {
-            return true;
-          }
-        }
-      },
       form: {
-        time: "",
-        date: "",
+        datetime: "",
         from: "",
         to: "",
         price: "",
@@ -135,8 +114,7 @@ export default {
         description: ""
       },
       errors: {
-        time: "",
-        date: "",
+        datetime: "",
         from: "",
         to: "",
         price: "",
@@ -153,24 +131,10 @@ export default {
     }, 500)
   },
   methods: {
-    _formDateTime(dateKey, timeKey) {
-      let formDate = this.form[dateKey];
-      let formTime = this.form[timeKey];
-      let [hours, minutes] = [0, 0];
-      if (formTime) {
-        [hours, minutes] = formTime.split(":");
-      } else {
-        var today = new Date();
-        today.setMinutes(today.getMinutes() + 30);
-        [hours, minutes] = [today.getHours(), today.getMinutes()];
-      }
-      let form_date = new Date(formDate);
-      return new Date(form_date.setHours(hours, minutes));
-    },
     _getTripDataFromForm() {
       return {
         dep_time: `${dateformat(
-          this._formDateTime("date", "time"),
+          this.form.datetime,
           "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
         )}`,
         start_point: {
@@ -188,7 +152,6 @@ export default {
     _isFormFieldEmpty() {
       let isEmpty = false;
       for (let field in this.form) {
-        console.log(field)
         // allow time only fields to be empty
         if (!this.form[field] && field !== "time") {
           isEmpty = true;
@@ -199,14 +162,14 @@ export default {
       }
       return isEmpty;
     },
-    _isValidTime(dateKey, timeKey) {
+    _isValidTime() {
       let isValid = true;
       let cur_date = new Date();
-      if (cur_date > this._formDateTime(dateKey, timeKey)) {
+      if (cur_date > this.form.datetime) {
         isValid = false;
-        this.errors[timeKey] = "Time have passed. Please change it. ";
+        this.errors.datetime = "Time have passed. Please change it. ";
       } else {
-        this.errors[timeKey] = "";
+        this.errors.datetime = "";
       }
       return isValid;
     },
@@ -230,7 +193,7 @@ export default {
     isValidForm() {
       return (
         !this._isFormFieldEmpty() &&
-        this._isValidTime("date", "time") &&
+        this._isValidTime() &&
         this._isGeoCoded("from") &&
         this._isGeoCoded("to")
       );

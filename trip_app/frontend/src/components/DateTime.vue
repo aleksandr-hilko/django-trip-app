@@ -1,90 +1,121 @@
 <template>
-  <div class="datetime">
-    <div>
-      <p class="form-header">Date and time</p>
-      <b-form-row>
-        <b-form-group class="form-group">
-          <datepicker
-            :bootstrap-styling="true"
-            placeholder="Departure date"
-            input-class="bg-light"
-            :disabled-dates="disabledDates"
-            @selected="date = $event"
-          />
-          <small v-if="errors.date" class="text-danger">{{ errors.date }}</small>
-        </b-form-group>
-        <b-form-group class="form-group col-md-6">
-          <b-form-input :id="type-time" v-model="time" :type="'time'" placeholder="Time" />
-          <small v-if="errors.time" class="text-danger">{{ errors.time }}</small>
-        </b-form-group>
-      </b-form-row>
+  <div>
+    <p class="form-header">{{ header }}</p>
+    <div class="datetime">
+      <datepicker
+        :bootstrap-styling="true"
+        input-class="bg-light"
+        :disabled-dates="disabledDates"
+        placeholder="DD:MM:YYYY"
+        @selected="date = $event"
+        @click.native="handleHit"
+      />
+      <select class="custom-select hours" @change="handleHit" v-model="hour">
+        <option
+          v-for="(item, index) in hours"
+          :key="index"
+          :value="index"
+          @click.native="handleHit"
+        >{{ item }}</option>
+      </select>
+      <select class="custom-select minutes" @change="handleHit" v-model="minute">
+        <option
+          v-for="(item, index) in minutes"
+          :key="index"
+          :value="index"
+          @click.native="handleHit"
+        >{{ item }}</option>
+      </select>
     </div>
+    <small v-if="error" class="text-danger">{{ error}}</small>
   </div>
 </template>
 
 <script>
 import Datepicker from "vuejs-datepicker";
-import { BFormGroup, BFormInput, BFormRow } from "bootstrap-vue";
-import dateformat from "dateformat";
 
 export default {
-  name: "DateTime",
+  name: "FormDateTime",
 
   components: {
-    Datepicker,
-    BFormInput
+    Datepicker
   },
-  disabledDates: {
-    customPredictor: function(date) {
-      // compare dates without time part
-      let currentDate = new Date().setHours(0, 0, 0, 0);
-      if (date.setHours(0, 0, 0, 0) < currentDate) {
-        return true;
-      }
-    }
-  },
-  methods: {
-    _formDateTime() {
-      let formDate = this.form.date;
-      let formTime = this.form.time;
-      let [hours, minutes] = [0, 0];
-      if (formTime) {
-        [hours, minutes] = formTime.split(":");
-      } else {
-        var today = new Date();
-        today.setMinutes(today.getMinutes() + 30);
-        [hours, minutes] = [today.getHours(), today.getMinutes()];
-      }
-      let form_date = new Date(formDate);
-      this.$emit('hit', new Date(form_date.setHours(hours, minutes)))
-      return new Date(form_date.setHours(hours, minutes));
+  props: {
+    error: {
+      type: String,
+      default: "",
+      required: false
+    },
+    header: {
+      type: String,
+      default: "",
+      required: false
     }
   },
   data() {
     return {
       date: "",
-      time: ""
+      time: "",
+      disabledDates: {
+        customPredictor: function(date) {
+          // compare dates without time part
+          let currentDate = new Date().setHours(0, 0, 0, 0);
+          if (date.setHours(0, 0, 0, 0) < currentDate) {
+            return true;
+          }
+        }
+      },
+      minutes: ["00", "10", "20", "30", "40", "50"],
+      hours: [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24"
+      ],
+      minute: "",
+      hour: ""
     };
+  },
+  methods: {
+    handleHit() {
+      let form_date = "";
+      if (this.date && this.minute && this.hour) {
+        form_date = new Date(this.date).setHours(this.hour, this.minute);
+      }
+      this.$emit("selectedDate", form_date);
+    }
   }
 };
 </script>
 
 <style>
-form {
-  margin-top: 40px;
+div.datetime {
+  display: flex;
 }
-.form-header {
-  margin: 10px 10px 5px 10px;
-  text-align: left;
-  display: block;
-  font-weight: bold;
+.vdp-datepicker {
+  flex: 2;
 }
-
-.custom-checkbox > label {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  text-align: left;
-  font-weight: bold;
-  float: left;
+select {
+  flex: 0.2;
 }
 </style>

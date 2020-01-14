@@ -1,8 +1,8 @@
 <template>
   <div class="search-trip">
-    <h3 class="form-header">Where do you want to go ?</h3>
     <div class="container mb-2 w-25">
       <b-form @submit="onSubmit">
+        <h3 class="form-header">Where do you want to go ?</h3>
         <b-form-group>
           <vue-bootstrap-typeahead
             v-model="form.from"
@@ -22,48 +22,18 @@
           <small v-if="errors.to" class="text-danger">{{ errors.to }}</small>
         </b-form-group>
         <h3 class="form-header">When do you want to go ?</h3>
-        <b-form-row>
-          <b-form-group class="form-group">
-            <datepicker
-              :bootstrap-styling="true"
-              placeholder="Date 1"
-              input-class="bg-light"
-              :disabled-dates="disabledDates"
-              @selected="form.date1 = $event"
-            />
-            <small v-if="errors.date1" class="text-danger">{{ errors.date1 }}</small>
-          </b-form-group>
-          <b-form-group class="form-group col-md-6">
-            <b-form-input
-              :id="'type-time'"
-              v-model="form.time1"
-              :type="'time'"
-              placeholder="Time1"
-            />
-            <small v-if="errors.time1" class="text-danger">{{ errors.time1 }}</small>
-          </b-form-group>
-        </b-form-row>
-        <b-form-row>
-          <b-form-group class="form-group">
-            <datepicker
-              :bootstrap-styling="true"
-              placeholder="Date 2"
-              input-class="bg-light"
-              :disabled-dates="disabledDates"
-              @selected="form.date2 = $event"
-            />
-            <small v-if="errors.date2" class="text-danger">{{ errors.date2 }}</small>
-          </b-form-group>
-          <b-form-group class="form-group col-md-6">
-            <b-form-input
-              :id="'type-time'"
-              v-model="form.time2"
-              :type="'time'"
-              placeholder="Time2"
-            />
-            <small v-if="errors.time2" class="text-danger">{{ errors.time2 }}</small>
-          </b-form-group>
-        </b-form-row>
+
+        <form-date-time
+          @selectedDate="form.datetime1 = $event"
+          :error="this.errors.datetime1"
+          :header="'The earliest apt date'"
+        ></form-date-time>
+        <form-date-time
+          @selectedDate="form.datetime2 = $event"
+          :error="this.errors.datetime2"
+          :header="'The latest apt date'"
+        ></form-date-time>
+
         <br />
         <button type="submit" class="btn btn-primary">Find</button>
       </b-form>
@@ -74,49 +44,34 @@
 <script>
 import { apiService } from "@/common/api.service.js";
 import VueBootstrapTypeahead from "@/components/VueBootstrapTypeahead.vue";
-import Datepicker from "vuejs-datepicker";
+import FormDateTime from "@/components/DateTime.vue";
 import _ from "underscore";
-import { BForm, BFormGroup, BFormInput, BFormRow } from "bootstrap-vue";
+import { BForm, BFormGroup } from "bootstrap-vue";
 import dateformat from "dateformat";
 
 export default {
   name: "SearchTripForm",
 
   components: {
-    Datepicker,
-    BFormInput,
     BForm,
     BFormGroup,
-    BFormRow,
-    VueBootstrapTypeahead
+    VueBootstrapTypeahead,
+    FormDateTime
   },
 
   data() {
     return {
       addresses_from: [],
       addresses_to: [],
-      disabledDates: {
-        customPredictor: function(date) {
-          // compare dates without time part
-          let currentDate = new Date().setHours(0, 0, 0, 0);
-          if (date.setHours(0, 0, 0, 0) < currentDate) {
-            return true;
-          }
-        }
-      },
       form: {
-        time1: "",
-        date1: "",
-        time2: "",
-        date2: "",
+        datetime1: "",
+        datetime2: "",
         from: "",
         to: ""
       },
       errors: {
-        time1: "",
-        date1: "",
-        time2: "",
-        date2: "",
+        datetime1: "",
+        datetime2: "",
         from: "",
         to: ""
       }
@@ -131,25 +86,11 @@ export default {
     }, 500)
   },
   methods: {
-    _formDateTime(dateKey, timeKey) {
-      let formDate = this.form[dateKey];
-      let formTime = this.form[timeKey];
-      let [hours, minutes] = [0, 0];
-      if (formTime) {
-        [hours, minutes] = formTime.split(":");
-      } else {
-        var today = new Date();
-        today.setMinutes(today.getMinutes() + 30);
-        [hours, minutes] = [today.getHours(), today.getMinutes()];
-      }
-      let form_date = new Date(formDate);
-      return new Date(form_date.setHours(hours, minutes));
-    },
     _isFormFieldEmpty() {
       let isEmpty = false;
       for (let field in this.form) {
         // allow time only fields to be empty
-        if (!this.form[field] && field !== "time1" && field !== "time2") {
+        if (!this.form[field]) {
           isEmpty = true;
           this.errors[field] = `Please fill this field `;
         } else {
@@ -158,14 +99,14 @@ export default {
       }
       return isEmpty;
     },
-    _isValidTime(dateKey, timeKey) {
+    _isValidTime(datetime) {
       let isValid = true;
       let cur_date = new Date();
-      if (cur_date > this._formDateTime(dateKey, timeKey)) {
+      if (cur_date > this.form[datetime]) {
         isValid = false;
-        this.errors[timeKey] = "Time have passed. Please change it. ";
+        this.errors[datetime] = "Time have passed. Please change it. ";
       } else {
-        this.errors[timeKey] = "";
+        this.errors[datetime] = "";
       }
       return isValid;
     },
@@ -189,8 +130,8 @@ export default {
     isValidForm() {
       return (
         !this._isFormFieldEmpty() &&
-        this._isValidTime("date1", "time1") &&
-        this._isValidTime("date2", "time2") &&
+        this._isValidTime("datetime1") &&
+        this._isValidTime("datetime2") &&
         this._isGeoCoded("from") &&
         this._isGeoCoded("to")
       );
@@ -206,11 +147,11 @@ export default {
             addr1: this.form.from,
             addr2: this.form.to,
             time1: `${dateformat(
-              this._formDateTime("date1", "time1"),
+              this.form.datetime1,
               "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
             )}`,
             time2: `${dateformat(
-              this._formDateTime("date2", "time2"),
+              this.form.datetime2,
               "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
             )}`
           }
