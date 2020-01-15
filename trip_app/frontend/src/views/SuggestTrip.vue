@@ -1,73 +1,78 @@
 <template>
   <div class="search-trip">
-    <div class="container mb-2 w-25">
-      <b-form @submit="onSubmit">
-        <div class="navigation">
-          <p class="form-header">Start and destination places of your trip</p>
-          <b-form-group>
-            <vue-bootstrap-typeahead
-              v-model="form.from"
-              :data="addresses_from"
-              placeholder="From"
-              @hit="form.from = $event"
-            />
-            <small v-if="errors.from" class="text-danger">{{ errors.from }}</small>
-          </b-form-group>
-          <b-form-group>
-            <vue-bootstrap-typeahead
-              v-model="form.to"
-              :data="addresses_to"
-              placeholder="To"
-              @hit="form.to = $event"
-            />
-            <small v-if="errors.to" class="text-danger">{{ errors.to }}</small>
-          </b-form-group>
-        </div>
-
-        <b-form-group>
-          <form-date-time
-            @selectedDate="form.datetime = $event"
-            :error="this.errors.datetime"
-            :header="'Date and Time'"
-          ></form-date-time>
-        </b-form-group>
-
-        <div class="otherDetails">
-          <b-form-group>
-            <label :for="price" class="form-header">Price</label>
-            <b-form-input :id="price" :type="'number'" v-model="form.price"></b-form-input>
-            <small v-if="errors.to" class="text-danger">{{ errors.price }}</small>
-          </b-form-group>
+    <div class="container mb-2 w-50">
+      <h4>Suggest your trip</h4>
+      <div class="content">
+        <b-form @submit="onSubmit">
+          <div class="navigation">
+            <p class="form-header">Start and destination places</p>
+            <b-form-group>
+              <vue-bootstrap-typeahead
+                v-model="form.from"
+                :data="addr_from"
+                placeholder="From"
+                @hit="form.from = $event"
+              />
+              <small v-if="errors.from" class="text-danger">{{ errors.from }}</small>
+            </b-form-group>
+            <b-form-group>
+              <vue-bootstrap-typeahead
+                v-model="form.to"
+                :data="addr_to"
+                placeholder="To"
+                @hit="form.to = $event"
+              />
+              <small v-if="errors.to" class="text-danger">{{ errors.to }}</small>
+            </b-form-group>
+          </div>
 
           <b-form-group>
-            <label :for="num-passengers" class="form-header">Number of passengers</label>
-            <b-form-input :id="num-passengers" :type="'number'" v-model="form.num_seats"></b-form-input>
-            <small v-if="errors.to" class="text-danger">{{ errors.num_seats }}</small>
+            <form-date-time
+              @selectedDate="form.datetime = $event"
+              :error="this.errors.datetime"
+              :header="'Date and Time'"
+            ></form-date-time>
           </b-form-group>
 
-          <b-form-group>
-            <b-form-checkbox
-              id="checkbox"
-              v-model="form.man_approve"
-              name="checkbox"
-              value="true"
-              unchecked-value="false"
-            >I want manually approve passengers to this trip</b-form-checkbox>
-          </b-form-group>
+          <div class="otherDetails">
+            <b-form-group>
+              <label for="price" class="form-header">Price</label>
+              <b-form-input id="price" :type="'number'" v-model="form.price"></b-form-input>
+              <small v-if="errors.to" class="text-danger">{{ this.errors.price }}</small>
+            </b-form-group>
 
-          <b-form-group>
-            <b-form-textarea
-              id="textarea"
-              v-model="form.description"
-              placeholder="Enter some specific notes about your trip here"
-              rows="3"
-              max-rows="6"
-            ></b-form-textarea>
-          </b-form-group>
-        </div>
-        <br />
-        <button type="submit" class="btn btn-primary">Submit</button>
-      </b-form>
+            <b-form-group>
+              <label for="num-passengers" class="form-header">Number of passengers</label>
+              <b-form-input id="num-passengers" :type="'number'" v-model="form.num_seats"></b-form-input>
+              <small v-if="errors.to" class="text-danger">{{ errors.num_seats }}</small>
+            </b-form-group>
+
+            <b-form-group>
+              <b-form-checkbox
+                id="checkbox"
+                v-model="form.man_approve"
+                name="checkbox"
+                value="true"
+                unchecked-value="false"
+              >I want manually approve passengers to this trip</b-form-checkbox>
+            </b-form-group>
+
+            <b-form-group>
+              <b-form-textarea
+                id="textarea"
+                v-model="form.description"
+                placeholder="Enter some specific notes about your trip here"
+                rows="3"
+                max-rows="6"
+              ></b-form-textarea>
+            </b-form-group>
+          </div>
+          <br />
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </b-form>
+
+        <Map :marker_to="this.selected_to" :marker_from="this.selected_from"></Map>
+      </div>
     </div>
   </div>
 </template>
@@ -76,6 +81,7 @@
 import { apiService } from "@/common/api.service.js";
 import VueBootstrapTypeahead from "@/components/VueBootstrapTypeahead.vue";
 import FormDateTime from "@/components/DateTime.vue";
+import Map from "@/components/Map.vue";
 import dateformat from "dateformat";
 
 import _ from "underscore";
@@ -97,19 +103,22 @@ export default {
     BFormCheckbox,
     BFormTextarea,
     VueBootstrapTypeahead,
-    FormDateTime
+    FormDateTime,
+    Map
   },
 
   data() {
     return {
-      addresses_from: [],
-      addresses_to: [],
+      addr_coord_from: {},
+      addr_coord_to: {},
+      addr_from: [],
+      addr_to: [],
       form: {
         datetime: "",
         from: "",
         to: "",
-        price: "",
-        num_seats: "",
+        price: null,
+        num_seats: null,
         man_approve: true,
         description: ""
       },
@@ -121,6 +130,14 @@ export default {
         num_seats: ""
       }
     };
+  },
+  computed: {
+    selected_to: function() {
+      return this.addr_coord_to[this.form.to];
+    },
+    selected_from: function() {
+      return this.addr_coord_from[this.form.from];
+    }
   },
   watch: {
     "form.from": _.debounce(function(addr) {
@@ -204,7 +221,6 @@ export default {
       let isValid = await this.isValidForm();
       if (isValid) {
         let trip_data = this._getTripDataFromForm();
-        console.log(trip_data);
         let endpoint = `/api/trips/`;
         apiService(endpoint, "POST", trip_data).then(data => {
           if (data.id) {
@@ -222,13 +238,15 @@ export default {
     async setAddressesFrom(query) {
       let endpoint = `/api/geocode/?query=${query}`;
       apiService(endpoint).then(data => {
-        this.addresses_from = data;
+        this.addr_coord_from = data;
+        this.addr_from = Object.keys(data);
       });
     },
     async setAddressesTo(query) {
       let endpoint = `/api/geocode/?query=${query}`;
       apiService(endpoint).then(data => {
-        this.addresses_to = data;
+        this.addr_coord_to = data;
+        this.addr_to = Object.keys(data);
       });
     }
   }
@@ -236,9 +254,6 @@ export default {
 </script>
 
 <style>
-form {
-  margin-top: 40px;
-}
 .form-header {
   margin: 10px 10px 5px 10px;
   text-align: left;
@@ -252,5 +267,15 @@ form {
   text-align: left;
   font-weight: bold;
   float: left;
+}
+
+h4 {
+  float: left;
+  margin: 20px 5px 10px 5px;
+}
+
+div.content {
+  display: flex;
+  width: 100%;
 }
 </style>
