@@ -20,25 +20,40 @@ export default {
   components: {
     TripCard
   },
+  props: {
+    trips: {
+      type: [Object, Array],
+      required: false,
+      default: () => []
+    },
+    next: {
+      type: String,
+      default: "",
+      required: false
+    },
+    previous: {
+      type: String,
+      default: "",
+      required: false
+    }
+  },
   data() {
     return {
-      trips: null,
-      next: null,
-      previous: null,
       loadingTrips: false
     };
   },
   methods: {
-    getTrips() {
+    async getTrips() {
       console.log(this.next);
       if (this.next) {
         this.loadingTrips = true;
         let resp = await apiService(this.next);
-        if (resp.valid){
-          this.trips.push(...data.results);
+        if (resp.valid) {
+          let body = resp.body;
+          this.trips.push(...body.results);
           this.loadingTrips = false;
-          if (data.next) {
-            this.next = data.next;
+          if (body.next) {
+            this.next = body.next;
           } else {
             this.next = null;
           }
@@ -47,19 +62,24 @@ export default {
     }
   },
 
-  beforeRouteEnter(to, from, next) {
+  async beforeRouteEnter(to, from, next) {
+    console.log(to);
+    console.log(from);
+    console.log(next);
+    if (from.name === "search-trip-form") {
+      return next();
+    }
     let endpoint = `/api/trips/?addr1=${to.query.addr1}&addr2=${to.query.addr2}&time1=${to.query.time1}&time2=${to.query.time2}`;
     let resp = await apiService(endpoint);
-    console.log(trips)
     if (resp.valid) {
-        return next(
+      return next(
         vm => (
           (vm.trips = resp.body.results),
           (vm.next = resp.body.next),
           (vm.previous = resp.body.previous)
         )
       );
-        }
+    }
   }
 };
 </script>

@@ -7,15 +7,14 @@
         input-class="bg-light"
         :disabled-dates="disabledDates"
         placeholder="DD:MM:YYYY"
-        @selected="date = $event"
-        @click.native="handleHit"
+        @selected="handleHit($event)"
       />
       <select class="custom-select hours" @change="handleHit" v-model="hour">
         <option
           v-for="(item, index) in hours"
           :key="index"
           :value="index"
-          @click.native="handleHit"
+          @click="handleHit"
         >{{ item }}</option>
       </select>
       <select class="custom-select minutes" @change="handleHit" v-model="minute">
@@ -23,7 +22,7 @@
           v-for="(item, index) in minutes"
           :key="index"
           :value="index"
-          @click.native="handleHit"
+          @click="handleHit"
         >{{ item }}</option>
       </select>
     </div>
@@ -97,7 +96,10 @@ export default {
     };
   },
   methods: {
-    handleHit() {
+    handleHit(event) {
+      if (event instanceof Date) {
+        this.date = event;
+      }
       let form_date = "";
       if (this.date && this.minute && this.hour) {
         form_date = new Date(this.date).setHours(this.hour, this.minute);

@@ -17,13 +17,11 @@ export default new VueRouter({
       component: Home
     },
     {
-      // with props: true, the slug parameter gets passed as a prop to the component
       path: "/search-trip/",
       name: "search-trip-form",
       component: SearchTripForm
     },
     {
-      // the ? sign makes the slug parameter optional
       path: "/suggest-trip/",
       name: "suggest-trip",
       component: SuggestTrip
@@ -31,7 +29,8 @@ export default new VueRouter({
     {
       path: "/search/",
       name: "search-list",
-      component: SearchTripList
+      component: SearchTripList,
+      props: true
     },
     {
       path: "/trip/:id",

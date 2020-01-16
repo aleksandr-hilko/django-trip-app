@@ -37,6 +37,7 @@
         <br />
         <button type="submit" class="btn btn-primary">Find</button>
       </b-form>
+      <small v-if="errors.geocode" class="text-danger">{{ errors.geocode }}</small>
     </div>
   </div>
 </template>
@@ -73,7 +74,8 @@ export default {
         datetime1: "",
         datetime2: "",
         from: "",
-        to: ""
+        to: "",
+        geocode: ""
       }
     };
   },
@@ -98,6 +100,9 @@ export default {
         }
       }
       return isEmpty;
+    },
+    _formatDateTime(datetime) {
+      return `${dateformat(datetime, "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'")}`;
     },
     _isValidTime(datetime) {
       let isValid = true;
@@ -131,31 +136,41 @@ export default {
       return (
         !this._isFormFieldEmpty() &&
         this._isValidTime("datetime1") &&
-        this._isValidTime("datetime2") &&
-        this._isGeoCoded("from") &&
-        this._isGeoCoded("to")
+        this._isValidTime("datetime2")
       );
     },
 
     async onSubmit(evt) {
       evt.preventDefault();
+      this.errors.geocode = "";
       let isValid = await this.isValidForm();
       if (isValid) {
-        await this.$router.push({
-          name: "search-list",
-          query: {
-            addr1: this.form.from,
-            addr2: this.form.to,
-            time1: `${dateformat(
-              this.form.datetime1,
-              "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
-            )}`,
-            time2: `${dateformat(
-              this.form.datetime2,
-              "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
-            )}`
-          }
-        });
+        let datetime1 = this._formatDateTime(this.form.datetime1);
+        let datetime2 = this._formatDateTime(this.form.datetime2);
+        let endpoint = `/api/trips/?addr1=${this.form.from}&addr2=${this.form.to}&time1=${datetime1}&time2=${datetime2}`;
+        let resp = await apiService(endpoint);
+        if (resp.valid) {
+          await this.$router.push({
+            name: "search-list",
+            query: {
+              addr1: this.form.from,
+              addr2: this.form.to,
+              time1: datetime1,
+              time2: datetime2
+            },
+            params: {
+              trips: resp.body.results,
+              next: resp.body.next,
+              previous: resp.body.previous
+            }
+          });
+        } else if (resp.status === 500) {
+          console.log("here");
+          this.errors.geocode =
+            "We are sorry. Geocode servise is not available. Please try resubmit form.";
+        } else {
+          console.log(resp);
+        }
       }
     },
 

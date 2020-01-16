@@ -142,7 +142,7 @@ class TripRequestViewSet(
 
     @action(detail=True, methods=["post"])
     def decline(self, *args, **kwargs):
-        """ Approve trip request via
+        """ Decline trip request via
             POST api/trip-requests/<id>/decline/. """
         trip_request = self.get_object()
         trip_request.decline()

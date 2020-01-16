@@ -135,10 +135,10 @@ export default {
   },
   computed: {
     selected_to: function() {
-      return this.addr_coord_to[this.form.start_point];
+      return this.addr_coord_to[this.form.dest_point];
     },
     selected_from: function() {
-      return this.addr_coord_from[this.form.dest_point];
+      return this.addr_coord_from[this.form.start_point];
     }
   },
   watch: {
@@ -234,8 +234,7 @@ export default {
         let resp = await apiService(endpoint, "POST", trip_data);
 
         if (resp.valid) {
-          await this.$router.push(
-            { 
+          await this.$router.push({
             name: "trip",
             params: { id: resp.body.id.toString() }
           });
