@@ -33,7 +33,8 @@ export default {
       console.log(this.next);
       if (this.next) {
         this.loadingTrips = true;
-        apiService(this.next).then(data => {
+        let resp = await apiService(this.next);
+        if (resp.valid){
           this.trips.push(...data.results);
           this.loadingTrips = false;
           if (data.next) {
@@ -41,23 +42,24 @@ export default {
           } else {
             this.next = null;
           }
-        });
+        }
       }
     }
   },
 
   beforeRouteEnter(to, from, next) {
     let endpoint = `/api/trips/?addr1=${to.query.addr1}&addr2=${to.query.addr2}&time1=${to.query.time1}&time2=${to.query.time2}`;
-    let trips = apiService(endpoint);
-    apiService(endpoint).then(trips => {
-      return next(
+    let resp = await apiService(endpoint);
+    console.log(trips)
+    if (resp.valid) {
+        return next(
         vm => (
-          (vm.trips = trips.results),
-          (vm.next = trips.next),
-          (vm.previous = trips.previous)
+          (vm.trips = resp.body.results),
+          (vm.next = resp.body.next),
+          (vm.previous = resp.body.previous)
         )
       );
-    });
+        }
   }
 };
 </script>

@@ -161,15 +161,21 @@ export default {
 
     async setAddressesFrom(query) {
       let endpoint = `/api/geocode/?query=${query}`;
-      apiService(endpoint).then(data => {
-        this.addresses_from = data;
-      });
+      let resp = await apiService(endpoint);
+      if (resp.valid) {
+        this.addresses_from = Object.keys(resp.body);
+      } else {
+        console.log(resp);
+      }
     },
     async setAddressesTo(query) {
       let endpoint = `/api/geocode/?query=${query}`;
-      apiService(endpoint).then(data => {
-        this.addresses_to = data;
-      });
+      let resp = await apiService(endpoint);
+      if (resp.valid) {
+        this.addresses_to = Object.keys(resp.body);
+      } else {
+        console.log(resp);
+      }
     }
   }
 };

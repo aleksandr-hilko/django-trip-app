@@ -10,13 +10,8 @@
         @update:bounds="boundsUpdated"
       >
         <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
-        <l-marker
-          v-for="marker in markers"
-          :key="marker.id"
-          :visible="marker.visible"
-          :lat-lng="marker.position"
-         
-        ></l-marker>
+        <l-marker v-if="marker_to.length != 0" :key="marker1" :lat-lng="marker_to"></l-marker>
+        <l-marker v-if="marker_from.length != 0" :key="marker2" :lat-lng="marker_from"></l-marker>
         <l-polyline v-if="haveTwoPoints" :lat-lngs="polylinelatlngs" :color="polylineColor"></l-polyline>
       </l-map>
     </div>
@@ -25,26 +20,10 @@
 
 <script>
 import { LMap, LTileLayer, LMarker, LPolyline } from "vue2-leaflet";
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css';
+import "leaflet/dist/leaflet.css";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css";
 import L from "leaflet";
-import 'leaflet-defaulticon-compatibility';
-
-// L.Icon.Default.imagePath = '';
-// L.Icon.Default.mergeOptions({
-//     iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-//     iconUrl: require('leaflet/dist/images/marker-icon.png'),
-//     shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-// });
-
-// delete L.Icon.Default.prototype._getIconUrl
-// L.Icon.Default.imagePath = ''
-// L.Icon.Default.mergeOptions({
-//   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-//   iconUrl: require('leaflet/dist/images/marker-icon.png'),
-//   shadowUrl: require('leaflet/dist/images/marker-shadow.png')
-// })
-
+import "leaflet-defaulticon-compatibility";
 
 export default {
   name: "Map",
@@ -70,27 +49,14 @@ export default {
     center: function() {
       let center = [53.914097, 27.602164];
       if (this.haveTwoPoints()) {
-        return center;
+        center = [
+          (this.marker_to[0] + this.marker_from[0]) / 2,
+          (this.marker_to[1] + this.marker_from[1]) / 2
+        ];
       } else if (this.marker_to.length != 0 || this.marker_from.length != 0) {
         center = this.marker_to.length != 0 ? this.marker_to : this.marker_from;
       }
       return center;
-    },
-    markers: function() {
-      return [
-        {
-          id: "m1",
-          position: this.marker_from,
-          visible: this.marker_from.length == 0 ? false : true,
-        
-        },
-        {
-          id: "m2",
-          position: this.marker_to,
-          visible: this.marker_to.length == 0 ? false : true,
-         
-        }
-      ];
     },
     polylinelatlngs: function() {
       return [this.marker_from, this.marker_to];
@@ -130,7 +96,7 @@ export default {
 </script>
 
 <style>
-@import "~leaflet/dist/leaflet.css"; 
+@import "~leaflet/dist/leaflet.css";
 div.simple {
   margin-left: 20px;
 }

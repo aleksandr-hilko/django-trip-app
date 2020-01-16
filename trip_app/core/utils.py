@@ -59,7 +59,7 @@ def geocode(address):
     geo_location = geolocator.geocode(f"{address}")
     if not geo_location:
         raise ValidationError(
-            "Please correct the address or provide geo coordinates. "
+            "Please correct the address. "
             f"We can't geocode address: {address}"
         )
     return Point(geo_location.latitude, geo_location.longitude, srid=4326)

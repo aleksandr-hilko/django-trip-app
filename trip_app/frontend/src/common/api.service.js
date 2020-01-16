@@ -1,16 +1,5 @@
 import { CSRF_TOKEN } from "./csrf_token.js"
 
-function handleResponse(response) {
-  if (response.status === 204) {
-    return '';
-  } else if (response.status === 404) {
-    return null;
-  } else {
-    return response.json();
-  }
-
-}
-
 async function apiService(endpoint, method, data) {
   // D.R.Y. code to make HTTP requests to the REST API backend using fetch
   const config = {
@@ -22,8 +11,14 @@ async function apiService(endpoint, method, data) {
     }
   };
   try {
-    const response = await fetch(endpoint, config);
-    return handleResponse(response);
+    let r = await fetch(endpoint, config)
+    if (r.status === 500) {
+      return { valid: r.ok, status: r.status, body: "" }
+    }
+    else {
+      return r.json()
+        .then(data => ({ valid: r.ok, status: r.status, body: data }))
+    }
   }
   catch (error) {
     return console.log(error);

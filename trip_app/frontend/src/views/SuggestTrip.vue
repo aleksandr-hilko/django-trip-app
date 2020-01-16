@@ -8,21 +8,21 @@
             <p class="form-header">Start and destination places</p>
             <b-form-group>
               <vue-bootstrap-typeahead
-                v-model="form.from"
+                v-model="form.start_point"
                 :data="addr_from"
                 placeholder="From"
-                @hit="form.from = $event"
+                @hit="form.start_point = $event"
               />
-              <small v-if="errors.from" class="text-danger">{{ errors.from }}</small>
+              <small v-if="errors.start_point" class="text-danger">{{ errors.start_point }}</small>
             </b-form-group>
             <b-form-group>
               <vue-bootstrap-typeahead
-                v-model="form.to"
+                v-model="form.dest_point"
                 :data="addr_to"
                 placeholder="To"
-                @hit="form.to = $event"
+                @hit="form.dest_point = $event"
               />
-              <small v-if="errors.to" class="text-danger">{{ errors.to }}</small>
+              <small v-if="errors.dest_point" class="text-danger">{{ errors.dest_point }}</small>
             </b-form-group>
           </div>
 
@@ -38,13 +38,13 @@
             <b-form-group>
               <label for="price" class="form-header">Price</label>
               <b-form-input id="price" :type="'number'" v-model="form.price"></b-form-input>
-              <small v-if="errors.to" class="text-danger">{{ this.errors.price }}</small>
+              <small v-if="errors.price" class="text-danger">{{ this.errors.price }}</small>
             </b-form-group>
 
             <b-form-group>
               <label for="num-passengers" class="form-header">Number of passengers</label>
               <b-form-input id="num-passengers" :type="'number'" v-model="form.num_seats"></b-form-input>
-              <small v-if="errors.to" class="text-danger">{{ errors.num_seats }}</small>
+              <small v-if="errors.num_seats" class="text-danger">{{ errors.num_seats }}</small>
             </b-form-group>
 
             <b-form-group>
@@ -73,6 +73,7 @@
 
         <Map :marker_to="this.selected_to" :marker_from="this.selected_from"></Map>
       </div>
+      <small v-if="errors.geocode" class="text-danger">{{ errors.geocode }}</small>
     </div>
   </div>
 </template>
@@ -115,35 +116,36 @@ export default {
       addr_to: [],
       form: {
         datetime: "",
-        from: "",
-        to: "",
-        price: null,
-        num_seats: null,
+        start_point: "",
+        dest_point: "",
+        price: "",
+        num_seats: "",
         man_approve: true,
         description: ""
       },
       errors: {
         datetime: "",
-        from: "",
-        to: "",
+        start_point: "",
+        dest_point: "",
         price: "",
-        num_seats: ""
+        num_seats: "",
+        geocode: ""
       }
     };
   },
   computed: {
     selected_to: function() {
-      return this.addr_coord_to[this.form.to];
+      return this.addr_coord_to[this.form.start_point];
     },
     selected_from: function() {
-      return this.addr_coord_from[this.form.from];
+      return this.addr_coord_from[this.form.dest_point];
     }
   },
   watch: {
-    "form.from": _.debounce(function(addr) {
+    "form.start_point": _.debounce(function(addr) {
       this.setAddressesFrom(addr);
     }, 500),
-    "form.to": _.debounce(function(addr) {
+    "form.dest_point": _.debounce(function(addr) {
       this.setAddressesTo(addr);
     }, 500)
   },
@@ -155,10 +157,10 @@ export default {
           "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
         )}`,
         start_point: {
-          address: this.form.from
+          address: this.form.start_point
         },
         dest_point: {
-          address: this.form.to
+          address: this.form.dest_point
         },
         price: this.form.price,
         man_approve: this.form.man_approve,
@@ -168,9 +170,16 @@ export default {
     },
     _isFormFieldEmpty() {
       let isEmpty = false;
-      for (let field in this.form) {
-        // allow time only fields to be empty
-        if (!this.form[field] && field !== "time") {
+      let required_fields = [
+        "datetime",
+        "start_point",
+        "dest_point",
+        "price",
+        "num_seats"
+      ];
+      for (var i = 0; i < required_fields.length; i++) {
+        let field = required_fields[i];
+        if (!this.form[field]) {
           isEmpty = true;
           this.errors[field] = `Please fill this field `;
         } else {
@@ -190,64 +199,79 @@ export default {
       }
       return isValid;
     },
-
-    _isGeoCoded(key) {
-      let isGeoCoded = true;
-      let query = this.form[key];
-      let endpoint = `/api/geocode/?query=${query}`;
-      let geoData = apiService(endpoint);
-      isGeoCoded = true;
-      if (geoData.length !== 0) {
-        this.errors[key] = "";
-      } else {
-        if (!this.errors[key]) {
-          this.errors[key] = "We can't detect this address";
-        }
-        isGeoCoded = false;
-      }
-      return isGeoCoded;
-    },
     isValidForm() {
-      return (
-        !this._isFormFieldEmpty() &&
-        this._isValidTime() &&
-        this._isGeoCoded("from") &&
-        this._isGeoCoded("to")
-      );
+      console.log("form is empty", this._isFormFieldEmpty());
+      console.log("time is valid", this._isValidTime());
+      return !this._isFormFieldEmpty() && this._isValidTime();
+    },
+    _showServerFormFieldsErrors(serverErrors) {
+      for (let err in serverErrors) {
+        if (err in this.errors) {
+          let error_text = "";
+          try {
+            error_text = serverErrors[err]["non_field_errors"][0];
+          } catch (error) {
+            error_text = serverErrors[err][0];
+          }
+          this.errors[err] = error_text;
+        }
+      }
+    },
+    _hideFormErrors() {
+      for (let error in this.errors) {
+        this.errors[error] = "";
+      }
     },
 
     async onSubmit(evt) {
       evt.preventDefault();
       let isValid = await this.isValidForm();
       if (isValid) {
+        console.log("valid form");
+        this._hideFormErrors();
         let trip_data = this._getTripDataFromForm();
         let endpoint = `/api/trips/`;
-        apiService(endpoint, "POST", trip_data).then(data => {
-          if (data.id) {
-            this.$router.push({
-              name: "trip",
-              params: { id: data.id }
-            });
-          } else {
-            console.log(data);
-          }
-        });
+        let resp = await apiService(endpoint, "POST", trip_data);
+
+        if (resp.valid) {
+          await this.$router.push(
+            { 
+            name: "trip",
+            params: { id: resp.body.id.toString() }
+          });
+        } else if (resp.status === 400) {
+          let errors = resp.body;
+          this._showServerFormFieldsErrors(errors);
+          console.log(errors);
+        } else if (resp.status === 500) {
+          console.log("here");
+          this.errors.geocode =
+            "We are sorry. Geocode servise is not available. Please try resubmit form.";
+        } else {
+          console.log(resp);
+        }
       }
     },
 
     async setAddressesFrom(query) {
       let endpoint = `/api/geocode/?query=${query}`;
-      apiService(endpoint).then(data => {
-        this.addr_coord_from = data;
-        this.addr_from = Object.keys(data);
-      });
+      let resp = await apiService(endpoint);
+      if (resp.valid) {
+        this.addr_coord_from = resp.body;
+        this.addr_from = Object.keys(resp.body);
+      } else {
+        console.log(resp);
+      }
     },
     async setAddressesTo(query) {
       let endpoint = `/api/geocode/?query=${query}`;
-      apiService(endpoint).then(data => {
-        this.addr_coord_to = data;
-        this.addr_to = Object.keys(data);
-      });
+      let resp = await apiService(endpoint);
+      if (resp.valid) {
+        this.addr_coord_to = resp.body;
+        this.addr_to = Object.keys(resp.body);
+      } else {
+        console.log(resp);
+      }
     }
   }
 };
