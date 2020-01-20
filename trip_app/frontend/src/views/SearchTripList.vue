@@ -1,13 +1,16 @@
 <template>
   <div class="suggest-trip">
-    <div class="container mt-2">
-      <h3>On this page you should be able to list of trips</h3>
-      <trip-card v-for="(trip, item) in trips" :key="item" :data="trip"></trip-card>
-      <div class="my-4">
-        <p v-show="loadingTrips">...loading...</p>
-        <button v-show="next" @click="getTrips" class="btn btn-sm btn-outline-success">Load More</button>
+    <div v-if="count !== 0" class="container mt-2">
+      <h5 class="trips-count">{{count}} trips were found per your request </h5>
+      <div class="trip-list">
+        <trip-card v-for="(trip, item) in trips" :key="item" :data="trip"></trip-card>
+        <div class="my-4">
+          <p v-show="loadingTrips">...loading...</p>
+          <button v-show="next" @click="getTrips" class="btn btn-sm btn-outline-success">Load More</button>
+        </div>
       </div>
     </div>
+    <h5 class="no-trips" v-else>We are sorry. No trips were found per your request.</h5>
   </div>
 </template>
 
@@ -21,6 +24,11 @@ export default {
     TripCard
   },
   props: {
+    count: {
+      type: String,
+      default: "",
+      required: false
+    },
     trips: {
       type: [Object, Array],
       required: false,
@@ -63,9 +71,6 @@ export default {
   },
 
   async beforeRouteEnter(to, from, next) {
-    console.log(to);
-    console.log(from);
-    console.log(next);
     if (from.name === "search-trip-form") {
       return next();
     }
@@ -74,6 +79,7 @@ export default {
     if (resp.valid) {
       return next(
         vm => (
+          (vm.count = resp.body.count),
           (vm.trips = resp.body.results),
           (vm.next = resp.body.next),
           (vm.previous = resp.body.previous)
@@ -83,3 +89,12 @@ export default {
   }
 };
 </script>
+
+<style>
+h5.no-trips {
+  margin-top: 20px;
+}
+.trips-count {
+  margin: 20px 0px 20px 0px;
+}
+</style>

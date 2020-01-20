@@ -6,7 +6,7 @@
         <p class="card-text">{{data.start_point['properties']['address']}}</p>
         <p class="card-text">{{data.dest_point['properties']['address']}}</p>
       </div>
-      <p class="card-text">{{data.price}}</p>
+      <p class="card-text">{{data.price}} р</p>
     </div>
     <div class="card-footer">
       <p class="card-text">{{data.driver}}</p>

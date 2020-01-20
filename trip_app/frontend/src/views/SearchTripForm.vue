@@ -159,6 +159,7 @@ export default {
               time2: datetime2
             },
             params: {
+              count: resp.body.count,
               trips: resp.body.results,
               next: resp.body.next,
               previous: resp.body.previous

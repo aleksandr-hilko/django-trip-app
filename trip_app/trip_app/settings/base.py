@@ -106,6 +106,9 @@ DATABASES = {
 
 AUTH_USER_MODEL = "accounts.User"
 
+LOGOUT_REDIRECT_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/"
+
 # django-crispy-forms
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 

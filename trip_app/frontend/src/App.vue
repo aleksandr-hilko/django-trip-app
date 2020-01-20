@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <NavbarComponent />
+    <NavbarComponent :requestUser="requestUser" />
     <router-view />
   </div>
 </template>
@@ -14,11 +14,17 @@ export default {
   components: {
     NavbarComponent
   },
+  data() {
+    return {
+      requestUser: ""
+    };
+  },
   methods: {
     async setUserInfo() {
       const resp = await apiService("/api/accounts/current/");
       console.log(resp);
       if (resp.valid) {
+        this.requestUser = resp.body.username;
         window.localStorage.setItem("username", resp.body.username);
       } else {
         console.log(resp);
