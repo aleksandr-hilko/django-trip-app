@@ -1,4 +1,5 @@
 from rest_framework.permissions import IsAuthenticated
+from trips.models import TripRequest
 
 
 class IsTripDriverOrAdmin(IsAuthenticated):
@@ -29,7 +30,9 @@ class NewPassengerNotDriver(IsAuthenticated):
         request a trip. """
 
     def has_object_permission(self, request, view, obj):
-        already_requested = request.user.requests.filter(
-            trip_id=obj.id
-        ).exists()
+        already_requested = (
+            request.user.requests.filter(trip_id=obj.id)
+            .exclude(status__in=[TripRequest.INACTIVE, TripRequest.DECLINED])
+            .exists()
+        )
         return not already_requested and not request.user == obj.driver

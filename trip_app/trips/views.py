@@ -19,8 +19,8 @@ from trips.serializers import TripSerializer, TripRequestSerializer
 
 
 class TripViewSet(ModelViewSet):
-    """ Provide default CRUD actions with custom 'reserve' and 'requests'
-        actions. """
+    """ Provide default CRUD actions with custom 'reserve', 'requests',
+        'user_requests' actions. """
 
     serializer_class = TripSerializer
     pagination_class = PageNumberPagination
@@ -33,6 +33,7 @@ class TripViewSet(ModelViewSet):
         "list": [IsAuthenticated],
         "retrieve": [IsAuthenticated],
         "create": [IsAuthenticated],
+        "user_requests": [IsAuthenticated],
         "reserve": [NewPassengerNotDriver],
     }
 
@@ -98,11 +99,24 @@ class TripViewSet(ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
-    def requests(self, *args, **kwargs):
+    def requests(self, request, **kwargs):
         """ The list of the requests related to the specific trip.
             GET /api/trips/<trip_id>/requests/. """
         trip = self.get_object()
-        serializer = TripRequestSerializer(trip.requests, many=True)
+        status = request.query_params.get("status")
+        trip_requests = trip.requests
+        if status:
+            trip_requests = trip_requests.filter(status=status)
+        serializer = TripRequestSerializer(trip_requests, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def user_requests(self, *args, **kwargs):
+        """ List of trip requests for a request user
+            GET /api/trips/<trip_id>/user_requests/. """
+        trip = self.get_object()
+        user_requests = trip.requests.filter(user=self.request.user)
+        serializer = TripRequestSerializer(user_requests, many=True)
         return Response(serializer.data)
 
 
@@ -152,7 +166,7 @@ class TripRequestViewSet(
     @action(detail=True, methods=["post"])
     def cancel(self, *args, **kwargs):
         """ Cancel reservation for a trip by sending a
-            POST to api/trip_requests/<id>/cancel/. """
+            POST to api/trip-requests/<id>/cancel/. """
         trip_request = self.get_object()
         trip_request.cancel()
         serializer = self.serializer_class(trip_request)
