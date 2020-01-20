@@ -5,7 +5,7 @@ from django.contrib.gis.geos import Point
 from geopy import Nominatim
 from rest_framework.exceptions import ValidationError
 
-geolocator = Nominatim(user_agent=settings.OPEN_STREET_MAP_KEY)
+geolocator = Nominatim(user_agent=settings.OPEN_STREET_MAP_KEY, timeout=2)
 
 
 def raise_for_status(resp):
